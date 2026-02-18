@@ -293,36 +293,6 @@
   .search-bar input:focus { outline: none; border-color: var(--red); }
   .market-deck-author { font-size: 0.7rem; color: var(--muted); margin-top: 4px; font-style: italic; }
 
-  /* ===================== DB STATUS BADGE ===================== */
-  .db-status {
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 0.7rem; letter-spacing: 0.08em; padding: 4px 10px;
-    border-radius: 99px; border: 1px solid var(--border);
-    background: var(--card-bg); color: var(--muted); margin-left: 12px;
-  }
-  .db-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
-  .db-status.connected .db-status-dot { background: var(--green); }
-  .db-status.connected { color: var(--green); border-color: var(--green-light); }
-  .db-status.error .db-status-dot { background: var(--red); }
-  .db-status.error { color: var(--red); border-color: var(--red); }
-
-  /* ===================== DB TEST PANEL ===================== */
-  .db-test-panel {
-    background: var(--card-bg); border: 2px solid var(--ink); border-radius: var(--radius);
-    padding: 28px; margin-bottom: 28px;
-  }
-  .db-test-panel h2 { margin-bottom: 6px; }
-  .db-test-panel .subtitle { margin-bottom: 20px; }
-  .db-test-log {
-    background: #111; color: #aaffaa; font-family: 'DM Mono', monospace;
-    font-size: 0.75rem; padding: 16px; border-radius: var(--radius);
-    min-height: 120px; max-height: 260px; overflow-y: auto;
-    line-height: 1.8; margin-bottom: 16px; white-space: pre-wrap;
-  }
-  .db-test-log .log-err  { color: #ff8a80; }
-  .db-test-log .log-ok   { color: #aaffaa; }
-  .db-test-log .log-info { color: #80d8ff; }
-  .db-test-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
   /* ===================== MISC ===================== */
   .separator { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
@@ -347,10 +317,6 @@
     <span class="logo-kanji" onclick="navigate('home')" style="cursor:pointer" title="Home">漢字</span>
     <span class="logo-text">Japanese Flashcard Quiz</span>
     <a class="nav-link" onclick="navigate('market')" style="cursor:pointer;margin-left:auto;margin-right:20px;font-size:0.75rem;color:var(--ink);text-decoration:none;letter-spacing:0.1em;padding:4px 8px;border-bottom:2px solid transparent;transition:var(--trans);" onmouseover="this.style.color='var(--red)';this.style.borderBottomColor='var(--red)'" onmouseout="this.style.color='var(--ink)';this.style.borderBottomColor='transparent'">市場 MARKET</a>
-    <span class="db-status" id="db-status-badge">
-      <span class="db-status-dot"></span>
-      <span id="db-status-text">DB</span>
-    </span>
     <nav class="breadcrumb" id="breadcrumb"></nav>
   </header>
 
@@ -548,21 +514,7 @@
       <button class="btn btn-sm" onclick="navigate('home')">← Back</button>
     </div>
 
-    <!-- DB Test Panel -->
-    <div class="db-test-panel" id="db-test-panel">
-      <h2>🔌 Database Connection Test</h2>
-      <p class="subtitle">Run tests to verify your Supabase setup is working correctly</p>
-      <div class="db-test-log" id="db-test-log">Ready. Click a test button below to begin...\n</div>
-      <div class="db-test-actions">
-        <button class="btn btn-sm btn-primary" onclick="dbTest_ping()">① Ping DB</button>
-        <button class="btn btn-sm" onclick="dbTest_write()">② Write Test</button>
-        <button class="btn btn-sm" onclick="dbTest_read()">③ Read Test</button>
-        <button class="btn btn-sm" onclick="dbTest_delete()">④ Delete Test</button>
-        <button class="btn btn-sm" onclick="dbTest_runAll()">▶ Run All</button>
-        <button class="btn btn-sm btn-red" onclick="dbTest_clearLog()">Clear Log</button>
-        <button class="btn btn-sm" id="hide-test-panel-btn" onclick="hideTestPanel()" style="margin-left:auto">Hide Panel ↑</button>
-      </div>
-    </div>
+
 
     <div class="market-header">
       <div class="search-bar">
@@ -721,147 +673,8 @@ function isSupabaseConfigured() {
   return SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY_HERE';
 }
 
-/* =====================================================================
-   DB STATUS BADGE
-===================================================================== */
-function setDbStatus(status) {
-  // status: 'checking' | 'connected' | 'error' | 'unconfigured'
-  const badge = document.getElementById('db-status-badge');
-  const text = document.getElementById('db-status-text');
-  badge.className = 'db-status';
 
-  if (status === 'connected') {
-    badge.classList.add('connected');
-    text.textContent = 'DB Online';
-  } else if (status === 'error') {
-    badge.classList.add('error');
-    text.textContent = 'DB Error';
-  } else if (status === 'unconfigured') {
-    text.textContent = 'DB: Setup needed';
-  } else {
-    text.textContent = 'DB…';
-  }
-}
 
-async function checkDbStatus() {
-  if (!isSupabaseConfigured()) { setDbStatus('unconfigured'); return; }
-  try {
-    await sbFetch('market_decks?select=id&limit=1');
-    setDbStatus('connected');
-  } catch(e) {
-    setDbStatus('error');
-  }
-}
-
-/* =====================================================================
-   DATABASE TEST PANEL
-===================================================================== */
-let testWrittenId = null;
-
-function dbLog(msg, type = 'info') {
-  const log = document.getElementById('db-test-log');
-  const span = document.createElement('span');
-  span.className = `log-${type}`;
-  const now = new Date().toLocaleTimeString();
-  span.textContent = `[${now}] ${msg}\n`;
-  log.appendChild(span);
-  log.scrollTop = log.scrollHeight;
-}
-
-function dbTest_clearLog() {
-  document.getElementById('db-test-log').innerHTML = '';
-  dbLog('Log cleared.', 'info');
-}
-
-async function dbTest_ping() {
-  dbLog('① Pinging database...', 'info');
-  if (!isSupabaseConfigured()) {
-    dbLog('✗ Supabase not configured! Set SUPABASE_URL and SUPABASE_ANON_KEY.', 'err');
-    return false;
-  }
-  try {
-    const start = Date.now();
-    await sbFetch('market_decks?select=id&limit=1');
-    const ms = Date.now() - start;
-    dbLog(`✓ Connection OK! Response time: ${ms}ms`, 'ok');
-    setDbStatus('connected');
-    return true;
-  } catch(e) {
-    dbLog(`✗ Ping failed: ${e.message}`, 'err');
-    setDbStatus('error');
-    return false;
-  }
-}
-
-async function dbTest_write() {
-  dbLog('② Writing test record to database...', 'info');
-  if (!isSupabaseConfigured()) { dbLog('✗ Not configured.', 'err'); return false; }
-  try {
-    const result = await dbInsertDeck(
-      '__TEST_DECK__',
-      'DB Test Bot',
-      [{ japanese: 'テスト', reading: 'tesuto', meaning: 'test' }]
-    );
-    testWrittenId = result[0].id;
-    dbLog(`✓ Write successful! Record ID: ${testWrittenId}`, 'ok');
-    return true;
-  } catch(e) {
-    dbLog(`✗ Write failed: ${e.message}`, 'err');
-    return false;
-  }
-}
-
-async function dbTest_read() {
-  dbLog('③ Reading all records from database...', 'info');
-  if (!isSupabaseConfigured()) { dbLog('✗ Not configured.', 'err'); return false; }
-  try {
-    const decks = await dbGetAllDecks();
-    dbLog(`✓ Read successful! Found ${decks.length} deck(s) in market.`, 'ok');
-    decks.slice(0, 3).forEach(d => {
-      dbLog(`   → "${d.name}" by ${d.author_name} (${d.cards.length} cards) [${d.id.slice(0,8)}...]`, 'info');
-    });
-    if (decks.length > 3) dbLog(`   → ...and ${decks.length - 3} more`, 'info');
-    return true;
-  } catch(e) {
-    dbLog(`✗ Read failed: ${e.message}`, 'err');
-    return false;
-  }
-}
-
-async function dbTest_delete() {
-  dbLog('④ Deleting test record...', 'info');
-  if (!isSupabaseConfigured()) { dbLog('✗ Not configured.', 'err'); return false; }
-  if (!testWrittenId) {
-    dbLog('  ⚠ No test record found. Run Write Test (②) first.', 'err');
-    return false;
-  }
-  try {
-    await dbDeleteDeck(testWrittenId);
-    dbLog(`✓ Delete successful! Removed test record ${testWrittenId.slice(0,8)}...`, 'ok');
-    testWrittenId = null;
-    return true;
-  } catch(e) {
-    dbLog(`✗ Delete failed: ${e.message}`, 'err');
-    return false;
-  }
-}
-
-async function dbTest_runAll() {
-  dbLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
-  dbLog('Running full test suite...', 'info');
-  const p = await dbTest_ping();
-  if (!p) { dbLog('Aborting — fix connection first.', 'err'); return; }
-  const w = await dbTest_write();
-  if (!w) { dbLog('Aborting — write failed.', 'err'); return; }
-  await dbTest_read();
-  await dbTest_delete();
-  dbLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
-  dbLog('✓ All tests passed! Your database is working correctly.', 'ok');
-}
-
-function hideTestPanel() {
-  document.getElementById('db-test-panel').style.display = 'none';
-}
 
 /* =====================================================================
    STATE & PERSISTENCE
@@ -1419,10 +1232,7 @@ function retryQuiz() {
    MARKET — DATABASE BACKED
 ===================================================================== */
 async function renderMarket() {
-  // Show test panel each time market is loaded
-  document.getElementById('db-test-panel').style.display = 'block';
-  
-  const list = document.getElementById('market-deck-list');
+const list = document.getElementById('market-deck-list');
   const loading = document.getElementById('market-loading');
 
   if (!isSupabaseConfigured()) {
@@ -1450,7 +1260,6 @@ async function renderMarket() {
       <p>Could not load decks from database.</p>
       <p style="font-size:0.75rem;margin-top:8px;color:var(--red)">${esc(e.message)}</p>
     </div>`;
-    setDbStatus('error');
   }
 }
 
@@ -1675,7 +1484,6 @@ function doImport() {
 ===================================================================== */
 load();
 navigate('home');
-checkDbStatus();
 </script>
 </body>
 </html>
