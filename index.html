@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>漢字 — Japanese Flashcard Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700&family=Shippori+Mincho:wght@400;700;800&family=DM+Mono:wght@300;400&family=Zen+Old+Mincho:wght@400;700;900&display=swap" rel="stylesheet">
+
+<style>
+  /* ===================== VARIABLES & RESET ===================== */
+  :root {
+    --ink:        #0d0d0d;
+    --paper:      #f5f0e8;
+    --paper-dark: #e8e0d0;
+    --red:        #c0392b;
+    --red-dark:   #8b1a0e;
+    --gold:       #b8860b;
+    --gold-light: #d4a017;
+    --green:      #2d6a4f;
+    --green-light:#40916c;
+    --muted:      #6b6459;
+    --border:     rgba(13,13,13,0.15);
+    --shadow:     rgba(13,13,13,0.12);
+    --card-bg:    #faf7f2;
+    --radius:     4px;
+    --trans:      0.22s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; scroll-behavior: smooth; }
+
+  body {
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 39px, var(--border) 39px, var(--border) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, var(--border) 39px, var(--border) 40px);
+    background-size: 40px 40px;
+  }
+
+  .app { max-width: 860px; margin: 0 auto; padding: 0 20px 60px; min-height: 100vh; }
+
+  /* ===================== HEADER ===================== */
+  .site-header {
+    display: flex; align-items: baseline; gap: 16px;
+    padding: 32px 0 24px; border-bottom: 2px solid var(--ink);
+    margin-bottom: 40px; position: relative;
+  }
+  .site-header::after {
+    content: ''; position: absolute; bottom: 4px; left: 0; right: 0;
+    height: 1px; background: var(--ink); opacity: 0.3;
+  }
+  .logo-kanji {
+    font-family: 'Zen Old Mincho', serif; font-size: 2.8rem; font-weight: 900;
+    line-height: 1; color: var(--red); letter-spacing: -2px;
+  }
+  .logo-text {
+    font-family: 'Shippori Mincho', serif; font-size: 0.85rem; font-weight: 400;
+    color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase;
+  }
+  .breadcrumb {
+    margin-left: auto; font-size: 0.75rem; color: var(--muted);
+    letter-spacing: 0.1em; display: flex; align-items: center; gap: 8px;
+  }
+  .breadcrumb span { opacity: 0.5; }
+  .breadcrumb a { color: var(--red); text-decoration: none; cursor: pointer; }
+  .breadcrumb a:hover { text-decoration: underline; }
+
+  /* ===================== SCREENS ===================== */
+  .screen { display: none; animation: fadeUp 0.3s ease both; }
+  .screen.active { display: block; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===================== TYPOGRAPHY ===================== */
+  h1 { font-family: 'Shippori Mincho', serif; font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 8px; }
+  h2 { font-family: 'Shippori Mincho', serif; font-size: 1.4rem; font-weight: 700; margin-bottom: 16px; }
+  .subtitle { font-size: 0.8rem; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 32px; }
+
+  /* ===================== BUTTONS ===================== */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; border: 2px solid var(--ink); background: transparent;
+    color: var(--ink); font-family: 'DM Mono', monospace; font-size: 0.8rem;
+    letter-spacing: 0.08em; cursor: pointer; transition: var(--trans);
+    text-transform: uppercase; border-radius: var(--radius); white-space: nowrap;
+  }
+  .btn:hover { background: var(--ink); color: var(--paper); }
+  .btn-primary { background: var(--ink); color: var(--paper); }
+  .btn-primary:hover { background: #333; border-color: #333; }
+  .btn-red { border-color: var(--red); color: var(--red); }
+  .btn-red:hover { background: var(--red); color: white; border-color: var(--red); }
+  .btn-sm { padding: 6px 12px; font-size: 0.72rem; }
+  .btn-icon { padding: 6px 10px; border-radius: var(--radius); line-height: 1; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
+  /* ===================== HOME SCREEN ===================== */
+  .home-top { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 32px; }
+  .deck-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; margin-bottom: 32px; }
+  .deck-card {
+    background: var(--card-bg); border: 2px solid var(--ink); border-radius: var(--radius);
+    padding: 24px 20px 20px; cursor: pointer; transition: var(--trans); position: relative; overflow: hidden;
+  }
+  .deck-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: var(--red); transform: scaleX(0); transform-origin: left; transition: var(--trans);
+  }
+  .deck-card:hover { transform: translateY(-3px); box-shadow: 4px 6px 0 var(--ink); }
+  .deck-card:hover::before { transform: scaleX(1); }
+  .deck-card-kanji {
+    font-family: 'Zen Old Mincho', serif; font-size: 2.6rem; font-weight: 900;
+    color: var(--red); opacity: 0.15; position: absolute; top: 8px; right: 12px;
+    line-height: 1; pointer-events: none;
+  }
+  .deck-card-name { font-family: 'Shippori Mincho', serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; position: relative; z-index: 1; }
+  .deck-card-meta { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.08em; position: relative; z-index: 1; }
+  .deck-card-actions { display: flex; gap: 6px; margin-top: 16px; position: relative; z-index: 1; }
+  .empty-state { text-align: center; padding: 60px 20px; border: 2px dashed var(--border); border-radius: var(--radius); color: var(--muted); }
+  .empty-state .empty-kanji { font-family: 'Zen Old Mincho', serif; font-size: 5rem; font-weight: 900; opacity: 0.1; display: block; margin-bottom: 16px; }
+
+  /* ===================== MODAL ===================== */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(13,13,13,0.7); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.active { display: flex; }
+  .modal { background: var(--paper); border: 2px solid var(--ink); border-radius: var(--radius); padding: 32px; width: 100%; max-width: 420px; animation: fadeUp 0.25s ease both; box-shadow: 6px 8px 0 var(--ink); }
+  .modal h2 { margin-bottom: 24px; }
+
+  /* ===================== FORM ELEMENTS ===================== */
+  .form-group { margin-bottom: 16px; }
+  label { display: block; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  input[type="text"], input[type="number"] {
+    width: 100%; padding: 10px 12px; border: 2px solid var(--border);
+    background: var(--card-bg); font-family: 'DM Mono', monospace; font-size: 0.9rem;
+    color: var(--ink); border-radius: var(--radius); transition: var(--trans); outline: none;
+  }
+  input:focus { border-color: var(--ink); }
+  .input-japanese { font-family: 'Noto Serif JP', serif !important; font-size: 1.3rem !important; letter-spacing: 0.1em; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+
+  /* ===================== DECK VIEW ===================== */
+  .deck-view-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 32px; gap: 16px; flex-wrap: wrap; }
+  .deck-actions-top { display: flex; gap: 10px; flex-wrap: wrap; }
+  .add-card-form { background: var(--card-bg); border: 2px solid var(--ink); border-radius: var(--radius); padding: 24px; margin-bottom: 32px; position: relative; }
+  .add-card-form h2 { margin-bottom: 20px; }
+  .add-card-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end; }
+  @media (max-width: 640px) { .add-card-grid { grid-template-columns: 1fr; } .form-row { grid-template-columns: 1fr; } }
+  .card-table-wrap { border: 2px solid var(--ink); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; }
+  thead { background: var(--ink); color: var(--paper); }
+  thead th { padding: 12px 16px; text-align: left; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 400; }
+  .th-num { width: 48px; } .th-actions { width: 90px; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background var(--trans); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--paper-dark); }
+  td { padding: 12px 16px; font-size: 0.85rem; vertical-align: middle; }
+  .td-num { color: var(--muted); font-size: 0.72rem; width: 48px; }
+  .td-japanese { font-family: 'Noto Serif JP', serif; font-size: 1.4rem; }
+  .td-reading { color: var(--muted); }
+  .td-actions { display: flex; gap: 6px; }
+  .edit-inline-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: end; padding: 12px 16px; }
+
+  /* ===================== QUIZ SETUP ===================== */
+  .setup-card { background: var(--card-bg); border: 2px solid var(--ink); border-radius: var(--radius); padding: 40px; max-width: 500px; margin: 0 auto 20px; box-shadow: 5px 7px 0 var(--ink); }
+  .setup-card h2 { margin-bottom: 8px; }
+  .setup-deck-name { font-family: 'Shippori Mincho', serif; font-size: 1.6rem; font-weight: 700; color: var(--red); margin-bottom: 24px; }
+  .range-info { font-size: 0.78rem; color: var(--muted); margin-top: 8px; letter-spacing: 0.05em; }
+  .setup-actions { display: flex; gap: 10px; margin-top: 28px; }
+
+  /* ===================== GAME MODE ===================== */
+  .game-mode-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .game-mode-option { background: var(--card-bg); border: 2px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; cursor: pointer; transition: var(--trans); }
+  .game-mode-option:hover { border-color: var(--ink); transform: translateY(-2px); }
+  .game-mode-option.selected { border-color: var(--red); background: var(--paper-dark); border-width: 3px; }
+  .game-mode-icon { font-size: 2rem; margin-bottom: 8px; }
+  .game-mode-name { font-family: 'Shippori Mincho', serif; font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+  .game-mode-desc { font-size: 0.7rem; color: var(--muted); line-height: 1.3; }
+
+  /* ===================== QUIZ SCREEN ===================== */
+  .quiz-progress-bar-wrap { height: 6px; background: var(--border); border-radius: 99px; margin-bottom: 32px; overflow: hidden; }
+  .quiz-progress-bar { height: 100%; background: var(--red); border-radius: 99px; transition: width 0.4s ease; }
+  .quiz-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); margin-bottom: 32px; letter-spacing: 0.08em; }
+  .quiz-score-live { display: flex; gap: 16px; }
+  .score-correct { color: var(--green); font-weight: bold; }
+  .score-wrong   { color: var(--red);   font-weight: bold; }
+  .quiz-card-scene { perspective: 1200px; margin: 0 auto 40px; max-width: 500px; height: 220px; }
+  .quiz-card-inner { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1); }
+  .quiz-card-inner.flipped { transform: rotateY(180deg); }
+  .quiz-card-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border: 2px solid var(--ink); border-radius: var(--radius); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; box-shadow: 5px 7px 0 var(--ink); }
+  .quiz-card-front { background: var(--card-bg); }
+  .quiz-card-back { transform: rotateY(180deg); }
+  .quiz-card-back.correct { background: #d4edda; border-color: var(--green); box-shadow: 5px 7px 0 var(--green); }
+  .quiz-card-back.wrong   { background: #f8d7da; border-color: var(--red);   box-shadow: 5px 7px 0 var(--red); }
+  .quiz-char { font-family: 'Zen Old Mincho', serif; font-size: clamp(3.5rem, 10vw, 5.5rem); font-weight: 900; line-height: 1; margin-bottom: 8px; color: var(--ink); }
+  .quiz-card-label { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; }
+  .quiz-back-answer { font-family: 'Shippori Mincho', serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; text-align: center; }
+  .quiz-back-reading { font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
+  .result-badge { font-size: 1.8rem; margin-bottom: 8px; }
+  .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 500px; margin: 0 auto 28px; }
+  .option-btn { padding: 16px 12px; border: 2px solid var(--border); background: var(--card-bg); font-family: 'DM Mono', monospace; font-size: 0.88rem; cursor: pointer; border-radius: var(--radius); text-align: left; transition: var(--trans); line-height: 1.4; color: var(--ink); }
+  .option-btn:hover:not(:disabled) { border-color: var(--ink); background: var(--ink); color: var(--paper); transform: translateY(-2px); box-shadow: 3px 4px 0 rgba(0,0,0,0.2); }
+  .option-btn.correct-ans { border-color: var(--green); background: var(--green); color: white; box-shadow: 3px 4px 0 var(--green-light); }
+  .option-btn.wrong-ans   { border-color: var(--red);   background: var(--red);   color: white; box-shadow: 3px 4px 0 var(--red-dark); }
+  .option-btn:disabled { cursor: not-allowed; opacity: 0.6; }
+  .option-btn.correct-ans:disabled, .option-btn.wrong-ans:disabled { opacity: 1; }
+  .quiz-next-wrap { text-align: center; }
+
+  /* ===================== TYPING MODE ===================== */
+  .typing-input-large { width: 100%; padding: 20px; border: 3px solid var(--ink); border-radius: var(--radius); font-family: 'Noto Serif JP', serif; font-size: 2rem; text-align: center; background: white; margin: 24px 0; }
+  .typing-input-large:focus { outline: none; border-color: var(--red); }
+
+  /* ===================== MEMORY MATCH ===================== */
+  .memory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; max-width: 500px; margin: 0 auto; }
+  .memory-card { aspect-ratio: 1; background: var(--card-bg); border: 3px solid var(--ink); border-radius: var(--radius); cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: 'Zen Old Mincho', serif; font-size: 1.4rem; font-weight: 900; transition: var(--trans); position: relative; }
+  .memory-card:hover { transform: scale(1.05); }
+  .memory-card.flipped { background: var(--paper-dark); }
+  .memory-card.matched { background: var(--green); color: white; border-color: var(--green-light); cursor: default; }
+  .memory-card.matched:hover { transform: none; }
+  .memory-card-back { position: absolute; inset: 0; background: var(--red); border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white; }
+  .memory-card.flipped .memory-card-back { display: none; }
+  .memory-stats { display: flex; justify-content: space-around; margin: 24px 0; font-size: 0.9rem; color: var(--muted); }
+  .memory-stats strong { color: var(--red); font-family: 'Zen Old Mincho', serif; font-size: 1.4rem; }
+
+  /* ===================== FLASHCARD MODE ===================== */
+  .flashcard-large { background: var(--card-bg); border: 3px solid var(--ink); border-radius: var(--radius); padding: 60px 40px; text-align: center; margin-bottom: 32px; cursor: pointer; transition: var(--trans); min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .flashcard-large:hover { transform: translateY(-4px); box-shadow: 6px 8px 0 var(--ink); }
+  .flashcard-front { font-family: 'Zen Old Mincho', serif; font-size: 4rem; font-weight: 900; color: var(--red); margin-bottom: 16px; }
+  .flashcard-back { display: none; }
+  .flashcard-large.revealed .flashcard-front { font-size: 2.5rem; margin-bottom: 24px; }
+  .flashcard-large.revealed .flashcard-back { display: block; }
+  .flashcard-meaning { font-size: 1.5rem; margin-bottom: 12px; }
+  .flashcard-reading { font-size: 1.1rem; color: var(--muted); }
+  .flashcard-hint { font-size: 0.85rem; color: var(--muted); margin-top: 16px; }
+
+  /* ===================== RESULTS SCREEN ===================== */
+  .results-wrap { max-width: 500px; margin: 0 auto; }
+  .results-big { background: var(--card-bg); border: 2px solid var(--ink); border-radius: var(--radius); padding: 48px 40px; text-align: center; margin-bottom: 24px; box-shadow: 6px 8px 0 var(--ink); }
+  .results-kanji-bg { font-family: 'Zen Old Mincho', serif; font-size: 8rem; font-weight: 900; color: var(--red); opacity: 0.07; line-height: 1; margin-bottom: -48px; display: block; }
+  .results-percent { font-family: 'Zen Old Mincho', serif; font-size: 5rem; font-weight: 900; line-height: 1; color: var(--red); margin-bottom: 8px; }
+  .results-label { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 32px; }
+  .results-breakdown { display: flex; gap: 0; border: 2px solid var(--ink); border-radius: var(--radius); overflow: hidden; margin-bottom: 32px; }
+  .results-stat { flex: 1; padding: 20px; text-align: center; border-right: 2px solid var(--ink); }
+  .results-stat:last-child { border-right: none; }
+  .results-stat-num { font-family: 'Shippori Mincho', serif; font-size: 2rem; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+  .results-stat-label { font-size: 0.68rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .stat-correct .results-stat-num { color: var(--green); }
+  .stat-wrong   .results-stat-num { color: var(--red); }
+  .results-message { font-family: 'Shippori Mincho', serif; font-size: 1.2rem; margin-bottom: 0; color: var(--muted); }
+  .results-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  /* ===================== IMPORT SCREEN ===================== */
+  .import-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
+  @media (max-width: 680px) { .import-layout { grid-template-columns: 1fr; } }
+  .import-panel { background: var(--card-bg); border: 2px solid var(--ink); border-radius: var(--radius); padding: 28px; }
+  .import-panel h2 { margin-bottom: 6px; }
+  .import-panel .subtitle { margin-bottom: 20px; }
+  .drop-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 32px 20px; text-align: center; cursor: pointer; transition: var(--trans); margin-bottom: 16px; background: var(--paper); }
+  .drop-zone:hover, .drop-zone.dragover { border-color: var(--red); background: #fdf5f4; }
+  .drop-zone-icon { font-family: 'Zen Old Mincho', serif; font-size: 2.5rem; color: var(--red); opacity: 0.4; display: block; margin-bottom: 10px; }
+  .drop-zone p { font-size: 0.8rem; color: var(--muted); line-height: 1.6; }
+  .drop-zone strong { color: var(--ink); }
+  .import-divider { text-align: center; font-size: 0.72rem; color: var(--muted); letter-spacing: 0.15em; margin: 12px 0; text-transform: uppercase; }
+  #import-textarea { width: 100%; min-height: 180px; padding: 12px; border: 2px solid var(--border); background: var(--paper); font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--ink); border-radius: var(--radius); resize: vertical; outline: none; transition: var(--trans); line-height: 1.7; }
+  #import-textarea:focus { border-color: var(--ink); }
+  #import-textarea::placeholder { color: var(--muted); opacity: 0.7; }
+  .import-preview { background: var(--card-bg); border: 2px solid var(--ink); border-radius: var(--radius); overflow: hidden; }
+  .import-preview-header { background: var(--ink); color: var(--paper); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .import-preview-header span { font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  .import-preview-count { font-family: 'Zen Old Mincho', serif; font-size: 1.3rem; font-weight: 900; color: #ff8a80; }
+  .import-preview-list { max-height: 340px; overflow-y: auto; padding: 8px 0; }
+  .preview-item { display: grid; grid-template-columns: 32px auto 1fr 1fr; align-items: center; gap: 10px; padding: 8px 16px; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+  .preview-item:last-child { border-bottom: none; }
+  .preview-num { color: var(--muted); font-size: 0.7rem; }
+  .preview-jp  { font-family: 'Noto Serif JP', serif; font-size: 1.1rem; }
+  .preview-rd  { color: var(--muted); }
+  .import-empty-preview { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 0.82rem; }
+  .import-empty-preview .empty-kanji { font-family: 'Zen Old Mincho', serif; font-size: 3rem; opacity: 0.12; display: block; margin-bottom: 10px; }
+  .import-actions { display: flex; gap: 10px; margin-top: 20px; align-items: center; flex-wrap: wrap; }
+  .import-deck-select { flex: 1; min-width: 140px; padding: 10px 12px; border: 2px solid var(--border); background: var(--card-bg); font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--ink); border-radius: var(--radius); outline: none; cursor: pointer; transition: var(--trans); }
+  .import-deck-select:focus { border-color: var(--ink); }
+  .format-box { background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-top: 16px; font-size: 0.75rem; color: var(--muted); line-height: 1.8; }
+  .format-box code { font-family: 'DM Mono', monospace; color: var(--ink); background: var(--paper-dark); padding: 1px 5px; border-radius: 3px; }
+
+  /* ===================== MARKET SCREEN ===================== */
+  .market-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 12px; flex-wrap: wrap; }
+  .search-bar { flex: 1; max-width: 400px; position: relative; }
+  .search-bar input { width: 100%; padding: 10px 16px; border: 2px solid var(--ink); border-radius: var(--radius); font-family: 'DM Mono', monospace; font-size: 0.8rem; background: var(--card-bg); transition: var(--trans); }
+  .search-bar input:focus { outline: none; border-color: var(--red); }
+  .market-deck-author { font-size: 0.7rem; color: var(--muted); margin-top: 4px; font-style: italic; }
+
+  /* ===================== DB STATUS BADGE ===================== */
+  .db-status {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.7rem; letter-spacing: 0.08em; padding: 4px 10px;
+    border-radius: 99px; border: 1px solid var(--border);
+    background: var(--card-bg); color: var(--muted); margin-left: 12px;
+  }
+  .db-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  .db-status.connected .db-status-dot { background: var(--green); }
+  .db-status.connected { color: var(--green); border-color: var(--green-light); }
+  .db-status.error .db-status-dot { background: var(--red); }
+  .db-status.error { color: var(--red); border-color: var(--red); }
+
+  /* ===================== DB TEST PANEL ===================== */
+  .db-test-panel {
+    background: var(--card-bg); border: 2px solid var(--ink); border-radius: var(--radius);
+    padding: 28px; margin-bottom: 28px;
+  }
+  .db-test-panel h2 { margin-bottom: 6px; }
+  .db-test-panel .subtitle { margin-bottom: 20px; }
+  .db-test-log {
+    background: #111; color: #aaffaa; font-family: 'DM Mono', monospace;
+    font-size: 0.75rem; padding: 16px; border-radius: var(--radius);
+    min-height: 120px; max-height: 260px; overflow-y: auto;
+    line-height: 1.8; margin-bottom: 16px; white-space: pre-wrap;
+  }
+  .db-test-log .log-err  { color: #ff8a80; }
+  .db-test-log .log-ok   { color: #aaffaa; }
+  .db-test-log .log-info { color: #80d8ff; }
+  .db-test-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* ===================== MISC ===================== */
+  .separator { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+  .text-muted { color: var(--muted); font-size: 0.82rem; }
+  .no-cards-msg { text-align: center; padding: 40px; color: var(--muted); font-size: 0.85rem; border: 2px dashed var(--border); border-radius: var(--radius); }
+
+  /* ===================== NOTIFICATIONS ===================== */
+  .notif { position: fixed; bottom: 24px; right: 24px; background: var(--ink); color: var(--paper); padding: 14px 20px; border-radius: var(--radius); font-size: 0.82rem; letter-spacing: 0.06em; z-index: 200; animation: notifIn 0.3s ease both; max-width: 300px; }
+  .notif.error { background: var(--red); }
+  @keyframes notifIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--paper); }
+  ::-webkit-scrollbar-thumb { background: var(--ink); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <span class="logo-kanji" onclick="navigate('home')" style="cursor:pointer" title="Home">漢字</span>
+    <span class="logo-text">Japanese Flashcard Quiz</span>
+    <a class="nav-link" onclick="navigate('market')" style="cursor:pointer;margin-left:auto;margin-right:20px;font-size:0.75rem;color:var(--ink);text-decoration:none;letter-spacing:0.1em;padding:4px 8px;border-bottom:2px solid transparent;transition:var(--trans);" onmouseover="this.style.color='var(--red)';this.style.borderBottomColor='var(--red)'" onmouseout="this.style.color='var(--ink)';this.style.borderBottomColor='transparent'">市場 MARKET</a>
+    <span class="db-status" id="db-status-badge">
+      <span class="db-status-dot"></span>
+      <span id="db-status-text">DB</span>
+    </span>
+    <nav class="breadcrumb" id="breadcrumb"></nav>
+  </header>
+
+  <!-- ============================================================ SCREEN: HOME ============================================================ -->
+  <div class="screen" id="screen-home">
+    <div class="home-top">
+      <div>
+        <h1>My Decks</h1>
+        <p class="subtitle">Select a deck to study, or create a new one</p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" onclick="navigate('import')">↑ Import</button>
+        <button class="btn btn-primary" onclick="openNewDeckModal()">＋ New Deck</button>
+      </div>
+    </div>
+    <div class="deck-grid" id="deck-grid"></div>
+  </div>
+
+  <!-- ============================================================ SCREEN: DECK VIEW ============================================================ -->
+  <div class="screen" id="screen-deck">
+    <div class="deck-view-header">
+      <div>
+        <h1 id="deck-view-title"></h1>
+        <p class="subtitle" id="deck-view-subtitle"></p>
+      </div>
+      <div class="deck-actions-top">
+        <button class="btn btn-sm" onclick="navigate('home')">← Back</button>
+        <button class="btn btn-primary btn-sm" id="start-quiz-btn" onclick="navigate('setup')">▶ Start Quiz</button>
+      </div>
+    </div>
+    <div class="add-card-form">
+      <h2 id="add-form-title">Add Card</h2>
+      <div class="add-card-grid">
+        <div class="form-group" style="margin-bottom:0">
+          <label>Japanese</label>
+          <input type="text" id="inp-japanese" class="input-japanese" placeholder="猫 / ねこ / ネコ" autocomplete="off">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Reading</label>
+          <input type="text" id="inp-reading" placeholder="neko" autocomplete="off">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Meaning</label>
+          <input type="text" id="inp-meaning" placeholder="cat" autocomplete="off">
+        </div>
+        <div>
+          <button class="btn btn-primary" id="add-card-btn" onclick="saveCard()">Add</button>
+        </div>
+      </div>
+    </div>
+    <div id="card-list-section">
+      <h2>Cards <span class="text-muted" id="card-count-label"></span></h2>
+      <div id="card-list-container"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================ SCREEN: QUIZ SETUP ============================================================ -->
+  <div class="screen" id="screen-setup">
+    <div style="max-width:600px; margin:0 auto;">
+      <h1>Quiz Setup</h1>
+      <p class="subtitle">Choose game mode and cards to practice</p>
+      <div class="setup-card">
+        <h2>Game Mode</h2>
+        <div class="game-mode-grid" id="game-mode-grid">
+          <div class="game-mode-option" data-mode="multiple-choice"><div class="game-mode-icon">🎯</div><div class="game-mode-name">Multiple Choice</div><div class="game-mode-desc">Choose the correct answer</div></div>
+          <div class="game-mode-option" data-mode="typing"><div class="game-mode-icon">⌨️</div><div class="game-mode-name">Typing Practice</div><div class="game-mode-desc">Type reading or romaji</div></div>
+          <div class="game-mode-option" data-mode="reverse"><div class="game-mode-icon">🔄</div><div class="game-mode-name">Reverse Quiz</div><div class="game-mode-desc">Meaning → Japanese</div></div>
+          <div class="game-mode-option" data-mode="flashcard"><div class="game-mode-icon">📇</div><div class="game-mode-name">Flashcard</div><div class="game-mode-desc">Tap to flip & review</div></div>
+          <div class="game-mode-option" data-mode="memory"><div class="game-mode-icon">🎴</div><div class="game-mode-name">Memory Match</div><div class="game-mode-desc">4×4 card matching game</div></div>
+        </div>
+      </div>
+      <div class="setup-card">
+        <h2>Deck</h2>
+        <div class="setup-deck-name" id="setup-deck-name"></div>
+        <div class="form-row">
+          <div class="form-group"><label>Start Card #</label><input type="number" id="inp-start" min="1" value="1"></div>
+          <div class="form-group"><label>End Card #</label><input type="number" id="inp-end" min="1" value="10"></div>
+        </div>
+        <p class="range-info" id="range-info"></p>
+        <div class="setup-actions">
+          <button class="btn btn-sm" onclick="navigate('deck')">← Back</button>
+          <button class="btn btn-primary" onclick="startQuiz()">▶ Begin</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ SCREEN: QUIZ ============================================================ -->
+  <div class="screen" id="screen-quiz">
+    <div class="quiz-progress-bar-wrap"><div class="quiz-progress-bar" id="quiz-progress-bar"></div></div>
+    <div class="quiz-meta">
+      <span id="quiz-counter">1 / 10</span>
+      <span class="quiz-score-live">
+        <span class="score-correct" id="live-correct">✓ 0</span>
+        <span class="score-wrong" id="live-wrong">✗ 0</span>
+      </span>
+    </div>
+    <div class="quiz-card-scene">
+      <div class="quiz-card-inner" id="quiz-card-inner">
+        <div class="quiz-card-face quiz-card-front">
+          <div class="quiz-char" id="quiz-char"></div>
+          <div class="quiz-card-label">What does this mean?</div>
+        </div>
+        <div class="quiz-card-face quiz-card-back" id="quiz-card-back">
+          <div class="result-badge" id="result-badge"></div>
+          <div class="quiz-back-answer" id="quiz-back-answer"></div>
+          <div class="quiz-back-reading" id="quiz-back-reading"></div>
+          <div class="quiz-card-label" id="quiz-back-label"></div>
+        </div>
+      </div>
+    </div>
+    <div class="options-grid" id="options-grid"></div>
+    <div class="quiz-next-wrap">
+      <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()" style="display:none">Next →</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ SCREEN: RESULTS ============================================================ -->
+  <div class="screen" id="screen-results">
+    <div class="results-wrap">
+      <h1 style="margin-bottom:32px">Results</h1>
+      <div class="results-big">
+        <span class="results-kanji-bg" id="results-kanji-bg">完</span>
+        <div class="results-percent" id="results-percent"></div>
+        <div class="results-label">Score</div>
+        <div class="results-breakdown">
+          <div class="results-stat stat-correct"><div class="results-stat-num" id="stat-correct"></div><div class="results-stat-label">Correct</div></div>
+          <div class="results-stat stat-wrong"><div class="results-stat-num" id="stat-wrong"></div><div class="results-stat-label">Wrong</div></div>
+          <div class="results-stat"><div class="results-stat-num" id="stat-total"></div><div class="results-stat-label">Total</div></div>
+        </div>
+        <div class="results-message" id="results-message"></div>
+      </div>
+      <div class="results-actions">
+        <button class="btn btn-primary" onclick="retryQuiz()">↺ Retry Range</button>
+        <button class="btn" onclick="navigate('deck')">Edit Deck</button>
+        <button class="btn" onclick="navigate('home')">← All Decks</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ SCREEN: IMPORT ============================================================ -->
+  <div class="screen" id="screen-import">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;gap:16px;flex-wrap:wrap">
+      <div><h1>Import Cards</h1><p class="subtitle">Paste or upload a list — cards are created automatically</p></div>
+      <button class="btn btn-sm" onclick="navigate('home')">← Back</button>
+    </div>
+    <div class="import-layout">
+      <div>
+        <div class="import-panel">
+          <h2>Your List</h2>
+          <p class="subtitle">Upload a .txt file or paste directly below</p>
+          <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+            <span class="drop-zone-icon">入</span>
+            <p><strong>Click to upload</strong> or drag &amp; drop a .txt file</p>
+            <p style="margin-top:6px;font-size:0.72rem">UTF-8 text file recommended</p>
+          </div>
+          <input type="file" id="file-input" accept=".txt" style="display:none" onchange="handleFileUpload(event)">
+          <div class="import-divider">— or paste text —</div>
+          <textarea id="import-textarea" placeholder="1. ある – aru – to exist (inanimate)&#10;2. いる – iru – to be, to exist (animate)&#10;3. する – suru – to do&#10;..." oninput="parseImport()"></textarea>
+          <div class="format-box">
+            <strong>Accepted formats:</strong><br>
+            <code>1. japanese – reading – meaning</code><br>
+            <code>japanese – reading – meaning</code><br>
+            <code>japanese / reading / meaning</code><br>
+            <code>japanese | reading | meaning</code><br>
+            Numbers and bullet points at the start are ignored.
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="import-preview" id="import-preview-box">
+          <div class="import-preview-header">
+            <span>Preview</span>
+            <span class="import-preview-count" id="preview-count">0 cards</span>
+          </div>
+          <div id="import-preview-list">
+            <div class="import-empty-preview"><span class="empty-kanji">読</span>Paste your list to see a preview</div>
+          </div>
+        </div>
+        <div class="import-actions">
+          <select class="import-deck-select" id="import-deck-select">
+            <option value="__new__">＋ Create new deck</option>
+          </select>
+          <button class="btn btn-primary" onclick="doImport()">↓ Import</button>
+        </div>
+        <p class="text-muted" style="margin-top:10px;font-size:0.72rem">Importing into an existing deck <em>adds</em> to it without deleting existing cards.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ SCREEN: MARKET ============================================================ -->
+  <div class="screen" id="screen-market">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;gap:16px;flex-wrap:wrap">
+      <div><h1>市場 Community Market</h1><p class="subtitle">Discover and share flashcard decks — powered by live database</p></div>
+      <button class="btn btn-sm" onclick="navigate('home')">← Back</button>
+    </div>
+
+    <!-- DB Test Panel -->
+    <div class="db-test-panel" id="db-test-panel">
+      <h2>🔌 Database Connection Test</h2>
+      <p class="subtitle">Run tests to verify your Supabase setup is working correctly</p>
+      <div class="db-test-log" id="db-test-log">Ready. Click a test button below to begin...\n</div>
+      <div class="db-test-actions">
+        <button class="btn btn-sm btn-primary" onclick="dbTest_ping()">① Ping DB</button>
+        <button class="btn btn-sm" onclick="dbTest_write()">② Write Test</button>
+        <button class="btn btn-sm" onclick="dbTest_read()">③ Read Test</button>
+        <button class="btn btn-sm" onclick="dbTest_delete()">④ Delete Test</button>
+        <button class="btn btn-sm" onclick="dbTest_runAll()">▶ Run All</button>
+        <button class="btn btn-sm btn-red" onclick="dbTest_clearLog()">Clear Log</button>
+        <button class="btn btn-sm" id="hide-test-panel-btn" onclick="hideTestPanel()" style="margin-left:auto">Hide Panel ↑</button>
+      </div>
+    </div>
+
+    <div class="market-header">
+      <div class="search-bar">
+        <input type="text" id="market-search" placeholder="Search decks..." onkeyup="filterMarketDecks()">
+      </div>
+      <button class="btn btn-primary" onclick="openShareModal()">↑ Share a Deck</button>
+    </div>
+
+    <div id="market-loading" style="text-align:center;padding:40px;color:var(--muted);font-size:0.85rem;display:none">
+      <div style="font-family:'Zen Old Mincho',serif;font-size:3rem;opacity:0.2;margin-bottom:12px">読</div>
+      Loading decks from database...
+    </div>
+
+    <div class="deck-grid" id="market-deck-list"></div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- ============================================================ MODALS ============================================================ -->
+
+<!-- New Deck -->
+<div class="modal-overlay" id="modal-new-deck">
+  <div class="modal">
+    <h2>New Deck</h2>
+    <div class="form-group">
+      <label>Deck Name</label>
+      <input type="text" id="inp-deck-name" placeholder="e.g. N5 Vocabulary, Hiragana..." autocomplete="off" onkeydown="if(event.key==='Enter') createDeck()">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeModal('modal-new-deck')">Cancel</button>
+      <button class="btn btn-primary" onclick="createDeck()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Deck -->
+<div class="modal-overlay" id="modal-rename-deck">
+  <div class="modal">
+    <h2>Rename Deck</h2>
+    <div class="form-group">
+      <label>New Name</label>
+      <input type="text" id="inp-rename-deck" placeholder="Deck name" autocomplete="off" onkeydown="if(event.key==='Enter') renameDeck()">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeModal('modal-rename-deck')">Cancel</button>
+      <button class="btn btn-primary" onclick="renameDeck()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Share Deck -->
+<div class="modal-overlay" id="modal-share-deck">
+  <div class="modal">
+    <h2>Share Deck to Market</h2>
+    <div class="form-group">
+      <label>Select Deck</label>
+      <select id="share-deck-select" style="width:100%;padding:10px 12px;border:2px solid var(--border);background:var(--card-bg);font-family:'DM Mono',monospace;font-size:0.8rem;color:var(--ink);border-radius:var(--radius);outline:none;"></select>
+    </div>
+    <div class="form-group">
+      <label>Your Name (optional)</label>
+      <input type="text" id="share-author-name" placeholder="Anonymous" autocomplete="off">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeModal('modal-share-deck')">Cancel</button>
+      <button class="btn btn-primary" id="share-deck-submit-btn" onclick="shareDeckToDB()">↑ Share to Market</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   ██████  ██████      ██████  ██████  ███    ██ ███████ ██  ██████
+  ██    ██ ██   ██    ██      ██    ██ ████   ██ ██      ██ ██
+  ██    ██ ██████     ██      ██    ██ ██ ██  ██ █████   ██ ██   ███
+  ██    ██ ██   ██    ██      ██    ██ ██  ██ ██ ██      ██ ██    ██
+   ██████  ██████      ██████  ██████  ██   ████ ██      ██  ██████
+
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  STEP 1: Create a free Supabase project at supabase.com     ║
+  ║  STEP 2: Go to SQL Editor and run the SQL below             ║
+  ║  STEP 3: Go to Settings > API and copy your URL + anon key  ║
+  ║  STEP 4: Paste them into the two constants below            ║
+  ╚══════════════════════════════════════════════════════════════╝
+
+  SQL to run in Supabase SQL Editor:
+  ─────────────────────────────────
+  create table market_decks (
+    id uuid primary key default gen_random_uuid(),
+    name text not null,
+    author_name text default 'Anonymous',
+    cards jsonb not null,
+    created_at timestamptz default now()
+  );
+
+  alter table market_decks enable row level security;
+
+  create policy "Anyone can read decks"
+    on market_decks for select using (true);
+
+  create policy "Anyone can insert decks"
+    on market_decks for insert with check (true);
+
+  create policy "Anyone can delete their own decks"
+    on market_decks for delete using (true);
+  ─────────────────────────────────
+
+===================================================================== */
+
+const SUPABASE_URL = 'https://sfbviebtejdnukngcebj.supabase.co';       // e.g. https://xyzxyz.supabase.co
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmYnZpZWJ0ZWpkbnVrbmdjZWJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MTE2MDIsImV4cCI6MjA4Njk4NzYwMn0.EACJYcVJ0Il2aefLULgMBWbAtzTlnF3z0-WrbCTyK3E'; // long string starting with eyJ...
+
+/* =====================================================================
+   SUPABASE API HELPERS
+===================================================================== */
+async function sbFetch(path, options = {}) {
+  const url = `${SUPABASE_URL}/rest/v1/${path}`;
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...(options.headers || {})
+    }
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`HTTP ${res.status}: ${errText}`);
+  }
+
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function dbGetAllDecks() {
+  return await sbFetch('market_decks?select=*&order=created_at.desc');
+}
+
+async function dbInsertDeck(name, authorName, cards) {
+  return await sbFetch('market_decks', {
+    method: 'POST',
+    body: JSON.stringify({ name, author_name: authorName, cards })
+  });
+}
+
+async function dbDeleteDeck(id) {
+  return await sbFetch(`market_decks?id=eq.${id}`, {
+    method: 'DELETE'
+  });
+}
+
+/* Check if Supabase is configured */
+function isSupabaseConfigured() {
+  return SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY_HERE';
+}
+
+/* =====================================================================
+   DB STATUS BADGE
+===================================================================== */
+function setDbStatus(status) {
+  // status: 'checking' | 'connected' | 'error' | 'unconfigured'
+  const badge = document.getElementById('db-status-badge');
+  const text = document.getElementById('db-status-text');
+  badge.className = 'db-status';
+
+  if (status === 'connected') {
+    badge.classList.add('connected');
+    text.textContent = 'DB Online';
+  } else if (status === 'error') {
+    badge.classList.add('error');
+    text.textContent = 'DB Error';
+  } else if (status === 'unconfigured') {
+    text.textContent = 'DB: Setup needed';
+  } else {
+    text.textContent = 'DB…';
+  }
+}
+
+async function checkDbStatus() {
+  if (!isSupabaseConfigured()) { setDbStatus('unconfigured'); return; }
+  try {
+    await sbFetch('market_decks?select=id&limit=1');
+    setDbStatus('connected');
+  } catch(e) {
+    setDbStatus('error');
+  }
+}
+
+/* =====================================================================
+   DATABASE TEST PANEL
+===================================================================== */
+let testWrittenId = null;
+
+function dbLog(msg, type = 'info') {
+  const log = document.getElementById('db-test-log');
+  const span = document.createElement('span');
+  span.className = `log-${type}`;
+  const now = new Date().toLocaleTimeString();
+  span.textContent = `[${now}] ${msg}\n`;
+  log.appendChild(span);
+  log.scrollTop = log.scrollHeight;
+}
+
+function dbTest_clearLog() {
+  document.getElementById('db-test-log').innerHTML = '';
+  dbLog('Log cleared.', 'info');
+}
+
+async function dbTest_ping() {
+  dbLog('① Pinging database...', 'info');
+  if (!isSupabaseConfigured()) {
+    dbLog('✗ Supabase not configured! Set SUPABASE_URL and SUPABASE_ANON_KEY.', 'err');
+    return false;
+  }
+  try {
+    const start = Date.now();
+    await sbFetch('market_decks?select=id&limit=1');
+    const ms = Date.now() - start;
+    dbLog(`✓ Connection OK! Response time: ${ms}ms`, 'ok');
+    setDbStatus('connected');
+    return true;
+  } catch(e) {
+    dbLog(`✗ Ping failed: ${e.message}`, 'err');
+    setDbStatus('error');
+    return false;
+  }
+}
+
+async function dbTest_write() {
+  dbLog('② Writing test record to database...', 'info');
+  if (!isSupabaseConfigured()) { dbLog('✗ Not configured.', 'err'); return false; }
+  try {
+    const result = await dbInsertDeck(
+      '__TEST_DECK__',
+      'DB Test Bot',
+      [{ japanese: 'テスト', reading: 'tesuto', meaning: 'test' }]
+    );
+    testWrittenId = result[0].id;
+    dbLog(`✓ Write successful! Record ID: ${testWrittenId}`, 'ok');
+    return true;
+  } catch(e) {
+    dbLog(`✗ Write failed: ${e.message}`, 'err');
+    return false;
+  }
+}
+
+async function dbTest_read() {
+  dbLog('③ Reading all records from database...', 'info');
+  if (!isSupabaseConfigured()) { dbLog('✗ Not configured.', 'err'); return false; }
+  try {
+    const decks = await dbGetAllDecks();
+    dbLog(`✓ Read successful! Found ${decks.length} deck(s) in market.`, 'ok');
+    decks.slice(0, 3).forEach(d => {
+      dbLog(`   → "${d.name}" by ${d.author_name} (${d.cards.length} cards) [${d.id.slice(0,8)}...]`, 'info');
+    });
+    if (decks.length > 3) dbLog(`   → ...and ${decks.length - 3} more`, 'info');
+    return true;
+  } catch(e) {
+    dbLog(`✗ Read failed: ${e.message}`, 'err');
+    return false;
+  }
+}
+
+async function dbTest_delete() {
+  dbLog('④ Deleting test record...', 'info');
+  if (!isSupabaseConfigured()) { dbLog('✗ Not configured.', 'err'); return false; }
+  if (!testWrittenId) {
+    dbLog('  ⚠ No test record found. Run Write Test (②) first.', 'err');
+    return false;
+  }
+  try {
+    await dbDeleteDeck(testWrittenId);
+    dbLog(`✓ Delete successful! Removed test record ${testWrittenId.slice(0,8)}...`, 'ok');
+    testWrittenId = null;
+    return true;
+  } catch(e) {
+    dbLog(`✗ Delete failed: ${e.message}`, 'err');
+    return false;
+  }
+}
+
+async function dbTest_runAll() {
+  dbLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+  dbLog('Running full test suite...', 'info');
+  const p = await dbTest_ping();
+  if (!p) { dbLog('Aborting — fix connection first.', 'err'); return; }
+  const w = await dbTest_write();
+  if (!w) { dbLog('Aborting — write failed.', 'err'); return; }
+  await dbTest_read();
+  await dbTest_delete();
+  dbLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+  dbLog('✓ All tests passed! Your database is working correctly.', 'ok');
+}
+
+function hideTestPanel() {
+  document.getElementById('db-test-panel').style.display = 'none';
+}
+
+/* =====================================================================
+   STATE & PERSISTENCE
+===================================================================== */
+let state = {
+  decks: {},
+  currentDeck: null,
+  editingCard: null,
+  gameMode: 'multiple-choice',
+  quiz: { cards: [], index: 0, correct: 0, wrong: 0, startIdx: 0, endIdx: 0, answered: false },
+  memory: { cards: [], flipped: [], matched: [], moves: 0, pairsFound: 0 },
+  marketDecks: [],
+  allMarketDecks: []
+};
+
+function save() { localStorage.setItem('jpquiz_decks', JSON.stringify(state.decks)); }
+function load() {
+  try {
+    const raw = localStorage.getItem('jpquiz_decks');
+    if (raw) state.decks = JSON.parse(raw);
+  } catch(e) { state.decks = {}; }
+}
+
+/* =====================================================================
+   NAVIGATION
+===================================================================== */
+function navigate(screen) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + screen).classList.add('active');
+  updateBreadcrumb(screen);
+  if (screen === 'home')    renderHome();
+  if (screen === 'deck')    renderDeck();
+  if (screen === 'setup')   renderSetup();
+  if (screen === 'results') renderResults();
+  if (screen === 'import')  renderImportScreen();
+  if (screen === 'market')  renderMarket();
+}
+
+function updateBreadcrumb(screen) {
+  const bc = document.getElementById('breadcrumb');
+  const deck = state.currentDeck ? state.decks[state.currentDeck] : null;
+  let html = '';
+  if (screen === 'home')    html = '<span>Decks</span>';
+  else if (screen === 'deck')    html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>${deck ? esc(deck.name) : ''}</span>`;
+  else if (screen === 'setup')   html = `<a onclick="navigate('home')">Decks</a><span>›</span><a onclick="navigate('deck')">${deck ? esc(deck.name) : ''}</a><span>›</span><span>Setup</span>`;
+  else if (screen === 'quiz')    html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Quiz</span>`;
+  else if (screen === 'results') html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Results</span>`;
+  else if (screen === 'import')  html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Import</span>`;
+  else if (screen === 'market')  html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Market</span>`;
+  bc.innerHTML = html;
+}
+
+/* =====================================================================
+   HOME
+===================================================================== */
+function renderHome() {
+  const grid = document.getElementById('deck-grid');
+  const ids = Object.keys(state.decks);
+  if (ids.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-kanji">空</span><p>No decks yet.</p><p>Create your first deck to get started.</p></div>`;
+    return;
+  }
+  const kanjiDeco = ['語','字','読','書','文','音','訓','味','辞','学'];
+  grid.innerHTML = ids.map((id, i) => {
+    const d = state.decks[id];
+    const count = d.cards.length;
+    const k = kanjiDeco[i % kanjiDeco.length];
+    return `
+      <div class="deck-card" onclick="openDeck('${id}')">
+        <div class="deck-card-kanji">${k}</div>
+        <div class="deck-card-name">${esc(d.name)}</div>
+        <div class="deck-card-meta">${count} card${count !== 1 ? 's' : ''}</div>
+        <div class="deck-card-actions" onclick="event.stopPropagation()">
+          <button class="btn btn-sm" onclick="openDeck('${id}')">Open</button>
+          <button class="btn btn-sm" onclick="openRenameModal('${id}')">Rename</button>
+          <button class="btn btn-sm btn-red" onclick="deleteDeck('${id}')">Delete</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function openDeck(id) { state.currentDeck = id; state.editingCard = null; navigate('deck'); }
+
+/* =====================================================================
+   DECK CRUD
+===================================================================== */
+function openNewDeckModal() {
+  document.getElementById('inp-deck-name').value = '';
+  openModal('modal-new-deck');
+  setTimeout(() => document.getElementById('inp-deck-name').focus(), 80);
+}
+
+function createDeck() {
+  const name = document.getElementById('inp-deck-name').value.trim();
+  if (!name) { notify('Please enter a deck name.', true); return; }
+  const id = 'deck_' + Date.now();
+  state.decks[id] = { name, cards: [] };
+  save(); closeModal('modal-new-deck'); notify(`Deck "${name}" created!`); openDeck(id);
+}
+
+function openRenameModal(id) {
+  state._renamingId = id;
+  document.getElementById('inp-rename-deck').value = state.decks[id].name;
+  openModal('modal-rename-deck');
+  setTimeout(() => document.getElementById('inp-rename-deck').focus(), 80);
+}
+
+function renameDeck() {
+  const name = document.getElementById('inp-rename-deck').value.trim();
+  if (!name) { notify('Please enter a name.', true); return; }
+  state.decks[state._renamingId].name = name;
+  save(); closeModal('modal-rename-deck'); notify('Deck renamed.'); renderHome();
+}
+
+function deleteDeck(id) {
+  const d = state.decks[id];
+  if (!confirm(`Delete deck "${d.name}" and all its cards? This cannot be undone.`)) return;
+  delete state.decks[id]; save(); notify('Deck deleted.'); renderHome();
+}
+
+/* =====================================================================
+   DECK VIEW
+===================================================================== */
+function renderDeck() {
+  if (!state.currentDeck || !state.decks[state.currentDeck]) { navigate('home'); return; }
+  const deck = state.decks[state.currentDeck];
+  document.getElementById('deck-view-title').textContent = deck.name;
+  document.getElementById('deck-view-subtitle').textContent = `${deck.cards.length} card${deck.cards.length !== 1 ? 's' : ''} in this deck`;
+  resetAddForm();
+  document.getElementById('card-count-label').textContent = `(${deck.cards.length})`;
+  const qBtn = document.getElementById('start-quiz-btn');
+  qBtn.disabled = deck.cards.length === 0;
+  renderCardList();
+}
+
+function renderCardList() {
+  const deck = state.decks[state.currentDeck];
+  const container = document.getElementById('card-list-container');
+  if (deck.cards.length === 0) {
+    container.innerHTML = `<div class="no-cards-msg">No cards yet — add your first card above!</div>`;
+    return;
+  }
+  const rows = deck.cards.map((c, i) => {
+    if (state.editingCard === i) {
+      return `<tr><td class="td-num">${i+1}</td><td colspan="3"><div class="edit-inline-grid">
+        <div><label>Japanese</label><input type="text" id="edit-jp-${i}" class="input-japanese" value="${esc(c.japanese)}" autocomplete="off"></div>
+        <div><label>Reading</label><input type="text" id="edit-rd-${i}" value="${esc(c.reading)}" autocomplete="off"></div>
+        <div><label>Meaning</label><input type="text" id="edit-mn-${i}" value="${esc(c.meaning)}" autocomplete="off"></div>
+        <div style="display:flex;gap:6px;align-items:flex-end;padding-bottom:2px">
+          <button class="btn btn-sm btn-primary" onclick="saveEditCard(${i})">Save</button>
+          <button class="btn btn-sm" onclick="cancelEdit()">✕</button>
+        </div></div></td></tr>`;
+    }
+    return `<tr>
+      <td class="td-num">${i+1}</td>
+      <td class="td-japanese">${esc(c.japanese)}</td>
+      <td class="td-reading">${esc(c.reading)}</td>
+      <td>${esc(c.meaning)}</td>
+      <td class="td-actions">
+        <button class="btn btn-sm btn-icon" onclick="editCard(${i})" title="Edit">✎</button>
+        <button class="btn btn-sm btn-red btn-icon" onclick="deleteCard(${i})" title="Delete">✕</button>
+      </td></tr>`;
+  }).join('');
+  container.innerHTML = `<div class="card-table-wrap"><table><thead><tr>
+    <th class="th-num">#</th><th>Japanese</th><th>Reading</th><th>Meaning</th><th class="th-actions">Actions</th>
+    </tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function resetAddForm() {
+  state.editingCard = null;
+  ['inp-japanese','inp-reading','inp-meaning'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('add-form-title').textContent = 'Add Card';
+  document.getElementById('add-card-btn').textContent = 'Add';
+}
+
+function saveCard() {
+  const jp = document.getElementById('inp-japanese').value.trim();
+  const rd = document.getElementById('inp-reading').value.trim();
+  const mn = document.getElementById('inp-meaning').value.trim();
+  if (!jp || !mn) { notify('Japanese and Meaning are required.', true); return; }
+  state.decks[state.currentDeck].cards.push({ japanese: jp, reading: rd, meaning: mn });
+  save(); resetAddForm(); renderDeck(); document.getElementById('inp-japanese').focus(); notify('Card added!');
+}
+
+function editCard(i) {
+  state.editingCard = i; renderCardList();
+  setTimeout(() => { const el = document.getElementById(`edit-jp-${i}`); if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } }, 50);
+}
+function cancelEdit() { state.editingCard = null; renderCardList(); }
+
+function saveEditCard(i) {
+  const jp = document.getElementById(`edit-jp-${i}`).value.trim();
+  const rd = document.getElementById(`edit-rd-${i}`).value.trim();
+  const mn = document.getElementById(`edit-mn-${i}`).value.trim();
+  if (!jp || !mn) { notify('Japanese and Meaning are required.', true); return; }
+  state.decks[state.currentDeck].cards[i] = { japanese: jp, reading: rd, meaning: mn };
+  save(); state.editingCard = null; renderDeck(); notify('Card updated.');
+}
+
+function deleteCard(i) {
+  if (!confirm('Delete this card?')) return;
+  state.decks[state.currentDeck].cards.splice(i, 1);
+  save(); renderDeck(); notify('Card deleted.');
+}
+
+/* =====================================================================
+   QUIZ SETUP
+===================================================================== */
+function renderSetup() {
+  const deck = state.decks[state.currentDeck];
+  document.getElementById('setup-deck-name').textContent = deck.name;
+  const total = deck.cards.length;
+  document.getElementById('inp-start').max = total;
+  document.getElementById('inp-end').max = total;
+  document.getElementById('inp-start').value = 1;
+  document.getElementById('inp-end').value = Math.min(10, total);
+  updateRangeInfo();
+  document.querySelectorAll('.game-mode-option').forEach(option => {
+    option.classList.toggle('selected', option.dataset.mode === state.gameMode);
+    option.onclick = function() {
+      state.gameMode = this.dataset.mode;
+      document.querySelectorAll('.game-mode-option').forEach(o => o.classList.remove('selected'));
+      this.classList.add('selected');
+    };
+  });
+  document.getElementById('inp-start').addEventListener('input', updateRangeInfo);
+  document.getElementById('inp-end').addEventListener('input', updateRangeInfo);
+}
+
+function updateRangeInfo() {
+  const deck = state.decks[state.currentDeck];
+  const total = deck.cards.length;
+  const s = parseInt(document.getElementById('inp-start').value) || 1;
+  const e = parseInt(document.getElementById('inp-end').value) || 1;
+  const count = Math.max(0, Math.min(e, total) - Math.max(s, 1) + 1);
+  document.getElementById('range-info').textContent =
+    `${total} total cards — this will quiz ${count} card${count !== 1 ? 's' : ''} (cards ${s}–${Math.min(e, total)})`;
+}
+
+function startQuiz() {
+  const deck = state.decks[state.currentDeck];
+  const total = deck.cards.length;
+  let s = Math.max(1, Math.min(parseInt(document.getElementById('inp-start').value), total));
+  let e = Math.max(s, Math.min(parseInt(document.getElementById('inp-end').value), total));
+  const cards = deck.cards.slice(s - 1, e);
+  if (cards.length === 0) { notify('No cards in that range.', true); return; }
+  const shuffled = [...cards].sort(() => Math.random() - 0.5);
+  state.quiz = { cards: shuffled, allCards: deck.cards, index: 0, correct: 0, wrong: 0, startIdx: s, endIdx: e, answered: false };
+  if (state.gameMode === 'memory') { startMemoryGame(cards); }
+  else { navigate('quiz'); state.gameMode === 'flashcard' ? renderFlashcard() : renderQuizQuestion(); }
+}
+
+/* =====================================================================
+   QUIZ
+===================================================================== */
+function cleanupGameModeUI() {
+  const quizScene = document.querySelector('.quiz-card-scene');
+  const progressBar = document.querySelector('.quiz-progress-bar-wrap');
+  const quizMeta = document.querySelector('.quiz-meta');
+  if (quizScene)   quizScene.style.display   = 'block';
+  if (progressBar) progressBar.style.display = 'block';
+  if (quizMeta)    quizMeta.style.display    = 'flex';
+  ['typing-container','flashcard-container','memory-container'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const inner = document.getElementById('quiz-card-inner');
+  const back  = document.getElementById('quiz-card-back');
+  if (inner) inner.classList.remove('flipped');
+  if (back)  back.classList.remove('correct', 'wrong');
+  const grid = document.getElementById('options-grid');
+  if (grid) grid.style.display = 'grid';
+}
+
+function renderQuizQuestion() {
+  cleanupGameModeUI();
+  const q = state.quiz;
+  const card  = q.cards[q.index];
+  const total = q.cards.length;
+  document.getElementById('quiz-progress-bar').style.width = (q.index / total * 100) + '%';
+  document.getElementById('quiz-counter').textContent = `${q.index + 1} / ${total}`;
+  document.getElementById('live-correct').textContent  = `✓ ${q.correct}`;
+  document.getElementById('live-wrong').textContent    = `✗ ${q.wrong}`;
+  q.answered = false;
+  document.getElementById('next-btn').style.display = 'none';
+  if (state.gameMode === 'typing')        renderTypingMode(card);
+  else if (state.gameMode === 'reverse')  renderReverseMode(card);
+  else                                    renderMultipleChoice(card);
+}
+
+function renderMultipleChoice(card) {
+  const q = state.quiz;
+  document.getElementById('quiz-char').textContent = card.japanese;
+  const correct = card.meaning;
+  const pool = q.allCards.filter(c => c.meaning !== correct).map(c => c.meaning).sort(() => Math.random() - 0.5);
+  const distractors = pool.slice(0, 3);
+  const pads = ['unknown','unclear','uncertain','(none)','various'];
+  while (distractors.length < 3) { const p = pads.shift(); if (!distractors.includes(p) && p !== correct) distractors.push(p); }
+  const options = [correct, ...distractors].sort(() => Math.random() - 0.5);
+  document.getElementById('options-grid').innerHTML = options.map(opt =>
+    `<button class="option-btn" data-meaning="${esc(opt)}" onclick="selectAnswer(this, '${esc(opt)}', '${esc(correct)}')">${esc(opt)}</button>`
+  ).join('');
+}
+
+function renderTypingMode(card) {
+  const q = state.quiz;
+  document.getElementById('quiz-char').textContent = card.meaning;
+  document.getElementById('options-grid').style.display = 'none';
+  let container = document.getElementById('typing-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'typing-container';
+    container.style.textAlign = 'center';
+    container.innerHTML = `<input type="text" id="typing-input" class="typing-input-large" placeholder="Type reading..." autocomplete="off">
+      <div style="font-size:0.85rem;color:var(--muted);margin-top:12px">Type in hiragana or romaji, then press Enter</div>
+      <div id="typing-feedback" style="margin-top:20px;display:none"></div>`;
+    document.querySelector('.quiz-card-scene').after(container);
+  }
+  container.style.display = 'block';
+  const input = document.getElementById('typing-input');
+  input.value = ''; input.disabled = false;
+  input.style.borderColor = ''; input.style.background = ''; input.style.color = '';
+  document.getElementById('typing-feedback').style.display = 'none';
+  const newInput = input.cloneNode(true);
+  input.parentNode.replaceChild(newInput, input);
+  newInput.focus();
+  newInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !q.answered) checkTypingAnswer(card); });
+}
+
+function checkTypingAnswer(card) {
+  const q = state.quiz;
+  if (q.answered) return;
+  const input = document.getElementById('typing-input');
+  const user = input.value.trim().toLowerCase();
+  const hiraganaUser = romajiToHiragana(user);
+  const hiraganaCorrect = romajiToHiragana(card.reading.toLowerCase());
+  const isCorrect = user === card.reading.toLowerCase() || user === card.japanese.toLowerCase()
+    || hiraganaUser === card.reading || hiraganaUser === hiraganaCorrect || user === hiraganaCorrect;
+  q.answered = true; input.disabled = true;
+  if (isCorrect) { q.correct++; input.style.borderColor = 'var(--green)'; input.style.background = 'var(--green)'; input.style.color = 'white'; }
+  else           { q.wrong++;   input.style.borderColor = 'var(--red)';   input.style.background = 'var(--red)';   input.style.color = 'white'; }
+  document.getElementById('live-correct').textContent = `✓ ${q.correct}`;
+  document.getElementById('live-wrong').textContent   = `✗ ${q.wrong}`;
+  const fb = document.getElementById('typing-feedback');
+  fb.style.display = 'block';
+  fb.innerHTML = `<div style="font-size:1.1rem;margin-bottom:12px">${isCorrect ? '✅ Correct!' : '❌ Incorrect'}</div>
+    <div style="font-family:'Noto Serif JP',serif;font-size:1.5rem;margin-bottom:8px">${esc(card.japanese)}</div>
+    <div style="color:var(--muted);margin-bottom:8px">${esc(card.reading)}</div>
+    <div style="font-size:0.9rem">${esc(card.meaning)}</div>`;
+  document.getElementById('next-btn').style.display = 'inline-flex';
+}
+
+function romajiToHiragana(romaji) {
+  const map = {'a':'あ','i':'い','u':'う','e':'え','o':'お','ka':'か','ki':'き','ku':'く','ke':'け','ko':'こ','sa':'さ','shi':'し','si':'し','su':'す','se':'せ','so':'そ','ta':'た','chi':'ち','ti':'ち','tsu':'つ','tu':'つ','te':'て','to':'と','na':'な','ni':'に','nu':'ぬ','ne':'ね','no':'の','ha':'は','hi':'ひ','fu':'ふ','hu':'ふ','he':'へ','ho':'ほ','ma':'ま','mi':'み','mu':'む','me':'め','mo':'も','ya':'や','yu':'ゆ','yo':'よ','ra':'ら','ri':'り','ru':'る','re':'れ','ro':'ろ','wa':'わ','wo':'を','n':'ん','ga':'が','gi':'ぎ','gu':'ぐ','ge':'げ','go':'ご','za':'ざ','ji':'じ','zi':'じ','zu':'ず','ze':'ぜ','zo':'ぞ','da':'だ','de':'で','do':'ど','ba':'ば','bi':'び','bu':'ぶ','be':'べ','bo':'ぼ','pa':'ぱ','pi':'ぴ','pu':'ぷ','pe':'ぺ','po':'ぽ','kya':'きゃ','kyu':'きゅ','kyo':'きょ','sha':'しゃ','shu':'しゅ','sho':'しょ','cha':'ちゃ','chu':'ちゅ','cho':'ちょ','nya':'にゃ','nyu':'にゅ','nyo':'にょ','hya':'ひゃ','hyu':'ひゅ','hyo':'ひょ','mya':'みゃ','myu':'みゅ','myo':'みょ','rya':'りゃ','ryu':'りゅ','ryo':'りょ','gya':'ぎゃ','gyu':'ぎゅ','gyo':'ぎょ','ja':'じゃ','ju':'じゅ','jo':'じょ','bya':'びゃ','byu':'びゅ','byo':'びょ','pya':'ぴゃ','pyu':'ぴゅ','pyo':'ぴょ'};
+  let result = '', i = 0, str = romaji.toLowerCase();
+  while (i < str.length) {
+    let matched = false;
+    for (let len = 3; len >= 1; len--) {
+      const sub = str.substr(i, len);
+      if (map[sub]) { result += map[sub]; i += len; matched = true; break; }
+    }
+    if (!matched) { result += str[i]; i++; }
+  }
+  return result;
+}
+
+function renderReverseMode(card) {
+  document.getElementById('quiz-char').textContent = card.meaning;
+  const correct = card.japanese;
+  const pool = state.quiz.allCards.filter(c => c.japanese !== correct).map(c => c.japanese).sort(() => Math.random() - 0.5);
+  const distractors = pool.slice(0, 3);
+  const pads = ['？','字','不明','未知','・'];
+  while (distractors.length < 3) { const p = pads.shift(); if (!distractors.includes(p) && p !== correct) distractors.push(p); }
+  const options = [correct, ...distractors].sort(() => Math.random() - 0.5);
+  document.getElementById('options-grid').innerHTML = options.map(opt =>
+    `<button class="option-btn" data-meaning="${esc(opt)}" onclick="selectAnswer(this, '${esc(opt)}', '${esc(correct)}')">${esc(opt)}</button>`
+  ).join('');
+}
+
+function renderFlashcard() {
+  cleanupGameModeUI();
+  const q = state.quiz;
+  const card = q.cards[q.index];
+  document.getElementById('quiz-progress-bar').style.width = (q.index / q.cards.length * 100) + '%';
+  document.getElementById('quiz-counter').textContent = `${q.index + 1} / ${q.cards.length}`;
+  document.getElementById('live-correct').textContent = `✓ ${q.correct}`;
+  document.getElementById('live-wrong').textContent   = `✗ ${q.wrong}`;
+  document.querySelector('.quiz-card-scene').style.display = 'none';
+  document.getElementById('options-grid').style.display   = 'none';
+  document.getElementById('next-btn').style.display       = 'none';
+  let container = document.getElementById('flashcard-container');
+  if (!container) { container = document.createElement('div'); container.id = 'flashcard-container'; document.querySelector('.quiz-card-scene').after(container); }
+  container.innerHTML = `<div class="flashcard-large" id="flashcard" onclick="revealFlashcard()">
+    <div class="flashcard-front">${esc(card.japanese)}</div>
+    <div class="flashcard-back"><div class="flashcard-meaning">${esc(card.meaning)}</div><div class="flashcard-reading">${esc(card.reading)}</div></div>
+    <div class="flashcard-hint">Tap to reveal</div></div>`;
+  container.style.display = 'block';
+}
+
+function revealFlashcard() {
+  const fc = document.getElementById('flashcard');
+  if (fc.classList.contains('revealed')) return;
+  fc.classList.add('revealed'); fc.onclick = null;
+  document.querySelector('.flashcard-hint').textContent = 'Click Next to continue';
+  state.quiz.correct++;
+  document.getElementById('live-correct').textContent = `✓ ${state.quiz.correct}`;
+  document.getElementById('next-btn').style.display = 'inline-flex';
+}
+
+function selectAnswer(btn, chosen, correct) {
+  const q = state.quiz;
+  if (q.answered) return;
+  q.answered = true;
+  const isCorrect = chosen === correct;
+  const card = q.cards[q.index];
+  if (isCorrect) q.correct++; else q.wrong++;
+  document.getElementById('live-correct').textContent = `✓ ${q.correct}`;
+  document.getElementById('live-wrong').textContent   = `✗ ${q.wrong}`;
+  document.querySelectorAll('.option-btn').forEach(b => { b.disabled = true; if (b.dataset.meaning === correct) b.classList.add('correct-ans'); });
+  if (!isCorrect) btn.classList.add('wrong-ans');
+  const inner = document.getElementById('quiz-card-inner');
+  const back  = document.getElementById('quiz-card-back');
+  document.getElementById('result-badge').textContent     = isCorrect ? '✓' : '✗';
+  document.getElementById('quiz-back-answer').textContent = card.meaning;
+  document.getElementById('quiz-back-reading').textContent = card.reading ? `(${card.reading})` : '';
+  document.getElementById('quiz-back-label').textContent  = isCorrect ? 'Correct!' : `You chose: ${chosen}`;
+  back.classList.add(isCorrect ? 'correct' : 'wrong');
+  setTimeout(() => { inner.classList.add('flipped'); document.getElementById('next-btn').style.display = 'inline-flex'; }, 300);
+}
+
+function nextQuestion() {
+  const q = state.quiz;
+  q.index++;
+  if (q.index >= q.cards.length) { navigate('results'); return; }
+  document.getElementById('quiz-card-inner').classList.remove('flipped');
+  if (state.gameMode === 'flashcard') renderFlashcard();
+  else setTimeout(renderQuizQuestion, 300);
+}
+
+/* =====================================================================
+   MEMORY MATCH
+===================================================================== */
+function startMemoryGame(cards) {
+  let gc = [...cards];
+  while (gc.length < 8) gc = [...gc, ...cards];
+  gc = gc.slice(0, 8);
+  const pairs = [];
+  gc.forEach((card, idx) => {
+    pairs.push({ id: `jp_${idx}`, text: card.japanese, pairId: idx, type: 'japanese' });
+    pairs.push({ id: `en_${idx}`, text: card.meaning,  pairId: idx, type: 'meaning'  });
+  });
+  state.memory = { cards: pairs.sort(() => Math.random() - 0.5), flipped: [], matched: [], moves: 0, pairsFound: 0, totalPairs: gc.length };
+  navigate('quiz');
+  renderMemoryGame();
+}
+
+function renderMemoryGame() {
+  cleanupGameModeUI();
+  document.querySelector('.quiz-card-scene').style.display = 'none';
+  document.getElementById('options-grid').style.display = 'none';
+  document.querySelector('.quiz-progress-bar-wrap').style.display = 'none';
+  document.querySelector('.quiz-meta').style.display = 'none';
+  document.getElementById('next-btn').style.display = 'none';
+  let container = document.getElementById('memory-container');
+  if (!container) { container = document.createElement('div'); container.id = 'memory-container'; document.querySelector('#screen-quiz').appendChild(container); }
+  container.innerHTML = `<div style="text-align:center;margin:32px 0"><h2 style="font-family:'Shippori Mincho',serif;margin-bottom:8px">Memory Match</h2><p style="font-size:0.85rem;color:var(--muted)">Match Japanese words with their meanings</p></div>
+    <div class="memory-stats"><div>Moves: <strong id="memory-moves">0</strong></div><div>Pairs: <strong id="memory-pairs">0</strong> / <strong>${state.memory.totalPairs}</strong></div></div>
+    <div class="memory-grid" id="memory-grid"></div>`;
+  document.getElementById('memory-grid').innerHTML = state.memory.cards.map((card, idx) =>
+    `<div class="memory-card" data-index="${idx}" onclick="flipMemoryCard(${idx})"><div class="memory-card-back">漢</div><div class="memory-card-front">${esc(card.text)}</div></div>`
+  ).join('');
+  container.style.display = 'block';
+}
+
+function flipMemoryCard(index) {
+  const mem = state.memory;
+  if (mem.matched.includes(index) || mem.flipped.includes(index) || mem.flipped.length >= 2) return;
+  mem.flipped.push(index);
+  document.querySelector(`.memory-card[data-index="${index}"]`).classList.add('flipped');
+  if (mem.flipped.length === 2) {
+    mem.moves++;
+    document.getElementById('memory-moves').textContent = mem.moves;
+    const [i1, i2] = mem.flipped;
+    if (mem.cards[i1].pairId === mem.cards[i2].pairId) {
+      setTimeout(() => {
+        mem.matched.push(i1, i2); mem.pairsFound++;
+        document.querySelector(`.memory-card[data-index="${i1}"]`).classList.add('matched');
+        document.querySelector(`.memory-card[data-index="${i2}"]`).classList.add('matched');
+        document.getElementById('memory-pairs').textContent = mem.pairsFound;
+        mem.flipped = [];
+        if (mem.pairsFound === mem.totalPairs) setTimeout(() => { notify('🎉 Complete! ' + mem.moves + ' moves'); navigate('results'); renderMemoryResults(); }, 800);
+      }, 600);
+    } else {
+      setTimeout(() => {
+        document.querySelector(`.memory-card[data-index="${i1}"]`).classList.remove('flipped');
+        document.querySelector(`.memory-card[data-index="${i2}"]`).classList.remove('flipped');
+        mem.flipped = [];
+      }, 1000);
+    }
+  }
+}
+
+function renderMemoryResults() {
+  const mem = state.memory;
+  document.getElementById('results-percent').textContent = '100%';
+  document.getElementById('stat-correct').textContent = mem.totalPairs;
+  document.getElementById('stat-wrong').textContent   = mem.moves - mem.totalPairs;
+  document.getElementById('stat-total').textContent   = mem.moves;
+  document.querySelector('.results-stat.stat-correct .results-stat-label').textContent = 'Pairs Found';
+  document.querySelector('.results-stat.stat-wrong .results-stat-label').textContent   = 'Extra Moves';
+  document.querySelector('.results-stat:last-child .results-stat-label').textContent   = 'Total Moves';
+  const eff = Math.round((mem.totalPairs / mem.moves) * 100);
+  let msg = 'Nice try! Practice makes perfect.', kb = '練';
+  if (eff >= 90) { msg = '完璧！Perfect memory!'; kb = '完'; }
+  else if (eff >= 70) { msg = 'Great memory skills!'; kb = '優'; }
+  else if (eff >= 50) { msg = 'Good job! Keep practicing.'; kb = '良'; }
+  document.getElementById('results-message').textContent = msg;
+  document.getElementById('results-kanji-bg').textContent = kb;
+}
+
+/* =====================================================================
+   RESULTS
+===================================================================== */
+function renderResults() {
+  ['Correct','Wrong','Total'].forEach((label, i) => {
+    const labels = document.querySelectorAll('.results-stat-label');
+    if (labels[i]) labels[i].textContent = label;
+  });
+  if (state.gameMode === 'memory') { renderMemoryResults(); return; }
+  const q = state.quiz;
+  const total = q.cards.length;
+  const pct = total > 0 ? Math.round((q.correct / total) * 100) : 0;
+  document.getElementById('quiz-progress-bar').style.width = '100%';
+  document.getElementById('results-percent').textContent = pct + '%';
+  document.getElementById('stat-correct').textContent = q.correct;
+  document.getElementById('stat-wrong').textContent   = q.wrong;
+  document.getElementById('stat-total').textContent   = total;
+  let msg = 'Keep practicing — you\'ll get there!', kb = '頑';
+  if (pct === 100) { msg = '完璧！Perfect score!'; kb = '完'; }
+  else if (pct >= 80) { msg = 'Great work! Keep studying!'; kb = '良'; }
+  else if (pct >= 60) { msg = 'Good effort! Review the ones you missed.'; kb = '練'; }
+  document.getElementById('results-message').textContent = msg;
+  document.getElementById('results-kanji-bg').textContent = kb;
+}
+
+function retryQuiz() {
+  if (state.gameMode === 'memory') { startMemoryGame(state.quiz.cards); return; }
+  state.quiz.cards = [...state.quiz.cards].sort(() => Math.random() - 0.5);
+  state.quiz.index = 0; state.quiz.correct = 0; state.quiz.wrong = 0; state.quiz.answered = false;
+  navigate('quiz');
+  state.gameMode === 'flashcard' ? renderFlashcard() : renderQuizQuestion();
+}
+
+/* =====================================================================
+   MARKET — DATABASE BACKED
+===================================================================== */
+async function renderMarket() {
+  // Show test panel each time market is loaded
+  document.getElementById('db-test-panel').style.display = 'block';
+  
+  const list = document.getElementById('market-deck-list');
+  const loading = document.getElementById('market-loading');
+
+  if (!isSupabaseConfigured()) {
+    list.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <span class="empty-kanji">設</span>
+      <p><strong>Database not configured yet.</strong></p>
+      <p style="margin-top:8px;font-size:0.82rem">Follow the setup instructions above in the test panel.</p>
+    </div>`;
+    return;
+  }
+
+  loading.style.display = 'block';
+  list.innerHTML = '';
+
+  try {
+    const decks = await dbGetAllDecks();
+    state.allMarketDecks = decks;
+    state.marketDecks = [...decks];
+    loading.style.display = 'none';
+    displayMarketDecks();
+  } catch(e) {
+    loading.style.display = 'none';
+    list.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <span class="empty-kanji">錯</span>
+      <p>Could not load decks from database.</p>
+      <p style="font-size:0.75rem;margin-top:8px;color:var(--red)">${esc(e.message)}</p>
+    </div>`;
+    setDbStatus('error');
+  }
+}
+
+function displayMarketDecks() {
+  const list = document.getElementById('market-deck-list');
+  const kanjiDeco = ['語','字','読','書','文','音','訓','味','辞','学'];
+  if (state.marketDecks.length === 0) {
+    list.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-kanji">空</span><p>No decks in the market yet.</p><p>Be the first to share one!</p></div>`;
+    return;
+  }
+  list.innerHTML = state.marketDecks.map((deck, i) => {
+    const count = deck.cards.length;
+    const k = kanjiDeco[i % kanjiDeco.length];
+    const dateStr = deck.created_at ? new Date(deck.created_at).toLocaleDateString() : '';
+    return `<div class="deck-card">
+      <div class="deck-card-kanji">${k}</div>
+      <div class="deck-card-name">${esc(deck.name)}</div>
+      <div class="market-deck-author">by ${esc(deck.author_name || 'Anonymous')} · ${dateStr}</div>
+      <div class="deck-card-meta">${count} card${count !== 1 ? 's' : ''}</div>
+      <div class="deck-card-actions" onclick="event.stopPropagation()">
+        <button class="btn btn-sm btn-primary" onclick="addMarketDeckToMyDecks('${esc(deck.id)}')">Add to My Decks</button>
+        <button class="btn btn-sm btn-red" onclick="deleteMarketDeck('${esc(deck.id)}')">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterMarketDecks() {
+  const query = document.getElementById('market-search').value.toLowerCase().trim();
+  state.marketDecks = query
+    ? state.allMarketDecks.filter(d => d.name.toLowerCase().includes(query) || (d.author_name || '').toLowerCase().includes(query))
+    : [...state.allMarketDecks];
+  displayMarketDecks();
+}
+
+function addMarketDeckToMyDecks(marketDeckId) {
+  const marketDeck = state.allMarketDecks.find(d => d.id === marketDeckId);
+  if (!marketDeck) { notify('Deck not found.', true); return; }
+  const newDeckId = 'deck_' + Date.now();
+  state.decks[newDeckId] = {
+    name: marketDeck.name + ' (from Market)',
+    cards: marketDeck.cards.map(c => ({ japanese: c.japanese, reading: c.reading, meaning: c.meaning }))
+  };
+  save(); notify(`Added "${marketDeck.name}" to your decks!`);
+}
+
+async function deleteMarketDeck(deckId) {
+  if (!confirm('Delete this deck from the market? This cannot be undone.')) return;
+  if (!isSupabaseConfigured()) { notify('Database not configured.', true); return; }
+  try {
+    await dbDeleteDeck(deckId);
+    state.allMarketDecks = state.allMarketDecks.filter(d => d.id !== deckId);
+    state.marketDecks    = state.marketDecks.filter(d => d.id !== deckId);
+    displayMarketDecks();
+    notify('Deck removed from market.');
+  } catch(e) {
+    notify('Delete failed: ' + e.message, true);
+  }
+}
+
+function openShareModal() {
+  if (!isSupabaseConfigured()) {
+    notify('Set up Supabase first! See the test panel above.', true);
+    return;
+  }
+  const sel = document.getElementById('share-deck-select');
+  const ids = Object.keys(state.decks);
+  sel.innerHTML = '<option value="">Select a deck...</option>';
+  ids.forEach(id => {
+    const d = state.decks[id];
+    const opt = document.createElement('option');
+    opt.value = id; opt.textContent = `${d.name} (${d.cards.length} cards)`;
+    sel.appendChild(opt);
+  });
+  document.getElementById('share-author-name').value = '';
+  openModal('modal-share-deck');
+}
+
+async function shareDeckToDB() {
+  const deckId = document.getElementById('share-deck-select').value;
+  const authorName = document.getElementById('share-author-name').value.trim() || 'Anonymous';
+  if (!deckId) { notify('Please select a deck.', true); return; }
+  const deck = state.decks[deckId];
+  if (!deck || deck.cards.length === 0) { notify('Cannot share an empty deck.', true); return; }
+  const btn = document.getElementById('share-deck-submit-btn');
+  btn.disabled = true; btn.textContent = 'Sharing…';
+  try {
+    await dbInsertDeck(deck.name, authorName, deck.cards);
+    closeModal('modal-share-deck');
+    notify(`"${deck.name}" is now live in the market! 🎉`);
+    await renderMarket();
+  } catch(e) {
+    notify('Share failed: ' + e.message, true);
+  } finally {
+    btn.disabled = false; btn.textContent = '↑ Share to Market';
+  }
+}
+
+/* =====================================================================
+   MODALS & UTILS
+===================================================================== */
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
+});
+
+function notify(msg, isError = false) {
+  const el = document.createElement('div');
+  el.className = 'notif' + (isError ? ' error' : '');
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2800);
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+document.getElementById('inp-meaning').addEventListener('keydown', e => { if (e.key === 'Enter') saveCard(); });
+
+/* =====================================================================
+   IMPORT
+===================================================================== */
+let parsedImportCards = [];
+
+function renderImportScreen() {
+  parsedImportCards = [];
+  document.getElementById('import-textarea').value = '';
+  document.getElementById('preview-count').textContent = '0 cards';
+  document.getElementById('import-preview-list').innerHTML = `<div class="import-empty-preview"><span class="empty-kanji">読</span>Paste your list to see a preview</div>`;
+  populateImportDeckSelect();
+}
+
+function populateImportDeckSelect() {
+  const sel = document.getElementById('import-deck-select');
+  sel.innerHTML = '<option value="__new__">＋ Create new deck</option>';
+  Object.keys(state.decks).forEach(id => {
+    const opt = document.createElement('option');
+    opt.value = id; opt.textContent = state.decks[id].name + ` (${state.decks[id].cards.length} cards)`;
+    sel.appendChild(opt);
+  });
+}
+
+function handleFileUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { document.getElementById('import-textarea').value = ev.target.result; parseImport(); };
+  reader.readAsText(file, 'UTF-8');
+  e.target.value = '';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const dz = document.getElementById('drop-zone');
+  if (!dz) return;
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => { document.getElementById('import-textarea').value = ev.target.result; parseImport(); };
+    reader.readAsText(file, 'UTF-8');
+  });
+});
+
+function parseImport() {
+  const lines = document.getElementById('import-textarea').value.split('\n').map(l => l.trim()).filter(l => l);
+  parsedImportCards = lines.map(parseLine).filter(Boolean);
+  renderImportPreview();
+}
+
+function parseLine(line) {
+  let s = line.replace(/^\s*[\d]+[\.\)]\s*/, '').replace(/^[\-\*•・]\s*/, '').trim();
+  let parts = null;
+  if (s.includes('–'))      parts = s.split('–').map(p => p.trim());
+  else if (s.includes('—')) parts = s.split('—').map(p => p.trim());
+  else if (s.includes(' - ')) parts = s.split(' - ').map(p => p.trim());
+  else if (s.includes('/'))  parts = s.split('/').map(p => p.trim());
+  else if (s.includes('|'))  parts = s.split('|').map(p => p.trim());
+  else if (s.includes('\t')) parts = s.split('\t').map(p => p.trim());
+  if (!parts || parts.length < 2) return null;
+  parts = parts.filter(p => p.length > 0);
+  if (parts.length === 2) return { japanese: parts[0], reading: '', meaning: parts[1] };
+  if (parts.length >= 3) return { japanese: parts[0], reading: parts[1], meaning: parts.slice(2).join(' – ') };
+  return null;
+}
+
+function renderImportPreview() {
+  const count = parsedImportCards.length;
+  document.getElementById('preview-count').textContent = count + ' card' + (count !== 1 ? 's' : '');
+  const list = document.getElementById('import-preview-list');
+  if (count === 0) {
+    list.innerHTML = `<div class="import-empty-preview"><span class="empty-kanji">読</span>${document.getElementById('import-textarea').value.trim() ? 'Could not parse any cards — check the format.' : 'Paste your list to see a preview'}</div>`;
+    return;
+  }
+  list.innerHTML = parsedImportCards.slice(0, 50).map((c, i) =>
+    `<div class="preview-item"><span class="preview-num">${i+1}</span><span class="preview-jp">${esc(c.japanese)}</span><span class="preview-rd">${esc(c.reading)}</span><span>${esc(c.meaning)}</span></div>`
+  ).join('') + (parsedImportCards.length > 50 ? `<div style="padding:12px 16px;font-size:0.75rem;color:var(--muted);text-align:center">...and ${parsedImportCards.length - 50} more cards</div>` : '');
+}
+
+function doImport() {
+  if (parsedImportCards.length === 0) { notify('No cards to import.', true); return; }
+  const val = document.getElementById('import-deck-select').value;
+  let deckId;
+  if (val === '__new__') {
+    const name = prompt('Name for the new deck:', 'Imported Deck');
+    if (!name || !name.trim()) return;
+    deckId = 'deck_' + Date.now();
+    state.decks[deckId] = { name: name.trim(), cards: [] };
+  } else { deckId = val; }
+  parsedImportCards.forEach(c => state.decks[deckId].cards.push({ japanese: c.japanese, reading: c.reading, meaning: c.meaning }));
+  save(); notify(`Imported ${parsedImportCards.length} cards into "${state.decks[deckId].name}"!`);
+  state.currentDeck = deckId; navigate('deck');
+}
+
+/* =====================================================================
+   INIT
+===================================================================== */
+load();
+navigate('home');
+checkDbStatus();
+</script>
+</body>
+</html>
