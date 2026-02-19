@@ -292,6 +292,7 @@
   .search-bar input { width: 100%; padding: 10px 16px; border: 2px solid var(--ink); border-radius: var(--radius); font-family: 'DM Mono', monospace; font-size: 0.8rem; background: var(--card-bg); transition: var(--trans); }
   .search-bar input:focus { outline: none; border-color: var(--red); }
   .market-deck-author { font-size: 0.7rem; color: var(--muted); margin-top: 4px; font-style: italic; }
+  .market-download-count { font-size: 0.72rem; color: var(--green); letter-spacing: 0.06em; margin-top: 6px; font-weight: bold; position: relative; z-index: 1; }
 
 
   /* ===================== MISC ===================== */
@@ -606,6 +607,7 @@
     name text not null,
     author_name text default 'Anonymous',
     cards jsonb not null,
+    downloads integer default 0,
     created_at timestamptz default now()
   );
 
@@ -617,8 +619,12 @@
   create policy "Anyone can insert decks"
     on market_decks for insert with check (true);
 
-  create policy "Anyone can delete their own decks"
-    on market_decks for delete using (true);
+  create policy "Anyone can update downloads"
+    on market_decks for update using (true) with check (true);
+
+  -- Already have the table? Just run these instead:
+  -- alter table market_decks add column downloads integer default 0;
+  -- create policy "Anyone can update downloads" on market_decks for update using (true) with check (true);
   ─────────────────────────────────
 
 ===================================================================== */
@@ -652,7 +658,7 @@ async function sbFetch(path, options = {}) {
 }
 
 async function dbGetAllDecks() {
-  return await sbFetch('market_decks?select=*&order=created_at.desc');
+  return await sbFetch('market_decks?select=*&order=downloads.desc,created_at.desc');
 }
 
 async function dbInsertDeck(name, authorName, cards) {
@@ -665,6 +671,13 @@ async function dbInsertDeck(name, authorName, cards) {
 async function dbDeleteDeck(id) {
   return await sbFetch(`market_decks?id=eq.${id}`, {
     method: 'DELETE'
+  });
+}
+
+async function dbIncrementDownloads(id, currentDownloads) {
+  return await sbFetch(`market_decks?id=eq.${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ downloads: currentDownloads + 1 })
   });
 }
 
@@ -1274,14 +1287,15 @@ function displayMarketDecks() {
     const count = deck.cards.length;
     const k = kanjiDeco[i % kanjiDeco.length];
     const dateStr = deck.created_at ? new Date(deck.created_at).toLocaleDateString() : '';
+    const downloads = deck.downloads || 0;
     return `<div class="deck-card">
       <div class="deck-card-kanji">${k}</div>
       <div class="deck-card-name">${esc(deck.name)}</div>
       <div class="market-deck-author">by ${esc(deck.author_name || 'Anonymous')} · ${dateStr}</div>
       <div class="deck-card-meta">${count} card${count !== 1 ? 's' : ''}</div>
+      <div class="market-download-count">↓ ${downloads} download${downloads !== 1 ? 's' : ''}</div>
       <div class="deck-card-actions" onclick="event.stopPropagation()">
-        <button class="btn btn-sm btn-primary" onclick="addMarketDeckToMyDecks('${esc(deck.id)}')">Add to My Decks</button>
-        <button class="btn btn-sm btn-red" onclick="deleteMarketDeck('${esc(deck.id)}')">Delete</button>
+        <button class="btn btn-sm btn-primary" onclick="addMarketDeckToMyDecks('${esc(deck.id)}', ${downloads})">Add to My Decks</button>
       </div>
     </div>`;
   }).join('');
@@ -1295,7 +1309,7 @@ function filterMarketDecks() {
   displayMarketDecks();
 }
 
-function addMarketDeckToMyDecks(marketDeckId) {
+async function addMarketDeckToMyDecks(marketDeckId, currentDownloads) {
   const marketDeck = state.allMarketDecks.find(d => d.id === marketDeckId);
   if (!marketDeck) { notify('Deck not found.', true); return; }
   const newDeckId = 'deck_' + Date.now();
@@ -1303,22 +1317,21 @@ function addMarketDeckToMyDecks(marketDeckId) {
     name: marketDeck.name + ' (from Market)',
     cards: marketDeck.cards.map(c => ({ japanese: c.japanese, reading: c.reading, meaning: c.meaning }))
   };
-  save(); notify(`Added "${marketDeck.name}" to your decks!`);
+  save();
+  notify(`Added "${marketDeck.name}" to your decks!`);
+  // Increment download counter
+  try {
+    await dbIncrementDownloads(marketDeckId, currentDownloads);
+    // Update local state so counter reflects immediately
+    const deck = state.allMarketDecks.find(d => d.id === marketDeckId);
+    if (deck) deck.downloads = currentDownloads + 1;
+    const deck2 = state.marketDecks.find(d => d.id === marketDeckId);
+    if (deck2) deck2.downloads = currentDownloads + 1;
+    displayMarketDecks();
+  } catch(e) { /* silently fail, download count not critical */ }
 }
 
-async function deleteMarketDeck(deckId) {
-  if (!confirm('Delete this deck from the market? This cannot be undone.')) return;
-  if (!isSupabaseConfigured()) { notify('Database not configured.', true); return; }
-  try {
-    await dbDeleteDeck(deckId);
-    state.allMarketDecks = state.allMarketDecks.filter(d => d.id !== deckId);
-    state.marketDecks    = state.marketDecks.filter(d => d.id !== deckId);
-    displayMarketDecks();
-    notify('Deck removed from market.');
-  } catch(e) {
-    notify('Delete failed: ' + e.message, true);
-  }
-}
+
 
 function openShareModal() {
   if (!isSupabaseConfigured()) {
