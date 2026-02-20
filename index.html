@@ -172,6 +172,79 @@
   .range-info { font-size: 0.78rem; color: var(--muted); margin-top: 8px; letter-spacing: 0.05em; }
   .setup-actions { display: flex; gap: 10px; margin-top: 28px; }
 
+  /* ---- Selection mode toggle ---- */
+  .selection-mode-toggle {
+    display: flex; border: 2px solid var(--ink); border-radius: var(--radius);
+    overflow: hidden; margin-bottom: 20px;
+  }
+  .selection-mode-btn {
+    flex: 1; padding: 9px 14px; border: none; background: transparent;
+    font-family: 'DM Mono', monospace; font-size: 0.75rem; letter-spacing: 0.1em;
+    text-transform: uppercase; cursor: pointer; transition: var(--trans); color: var(--muted);
+    border-right: 2px solid var(--ink);
+  }
+  .selection-mode-btn:last-child { border-right: none; }
+  .selection-mode-btn.active { background: var(--ink); color: var(--paper); }
+  .selection-mode-btn:not(.active):hover { background: var(--paper-dark); color: var(--ink); }
+
+  /* ---- Card Picker ---- */
+  #card-picker-section { display: none; }
+  .card-picker-controls {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .card-picker-controls .picker-info {
+    margin-left: auto; font-size: 0.72rem; color: var(--muted); letter-spacing: 0.05em;
+  }
+  .card-picker-search {
+    width: 100%; padding: 8px 12px; border: 2px solid var(--border);
+    background: var(--card-bg); font-family: 'DM Mono', monospace; font-size: 0.8rem;
+    color: var(--ink); border-radius: var(--radius); outline: none; transition: var(--trans);
+    margin-bottom: 10px;
+  }
+  .card-picker-search:focus { border-color: var(--ink); }
+  .card-picker-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px; max-height: 320px; overflow-y: auto;
+    padding: 4px 2px; margin-bottom: 8px;
+  }
+  .picker-card {
+    border: 2px solid var(--border); border-radius: var(--radius);
+    padding: 10px 10px 8px; cursor: pointer; transition: var(--trans);
+    background: var(--card-bg); text-align: center; position: relative;
+    user-select: none;
+  }
+  .picker-card:hover { border-color: var(--ink); transform: translateY(-2px); }
+  .picker-card.selected {
+    border-color: var(--red); background: #fdf2f1;
+    box-shadow: 2px 3px 0 var(--red);
+  }
+  .picker-card.hidden-by-search { display: none; }
+  .picker-card-num {
+    font-size: 0.62rem; color: var(--muted); letter-spacing: 0.08em;
+    position: absolute; top: 5px; left: 7px;
+  }
+  .picker-card-check {
+    position: absolute; top: 4px; right: 6px; font-size: 0.75rem;
+    color: var(--red); opacity: 0; transition: var(--trans);
+  }
+  .picker-card.selected .picker-card-check { opacity: 1; }
+  .picker-card-japanese {
+    font-family: 'Zen Old Mincho', serif; font-size: 1.5rem; font-weight: 900;
+    color: var(--ink); line-height: 1; margin-top: 6px; margin-bottom: 4px;
+  }
+  .picker-card-meaning {
+    font-size: 0.65rem; color: var(--muted); letter-spacing: 0.04em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .picker-card-reading {
+    font-size: 0.62rem; color: var(--muted); opacity: 0.7;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .card-picker-empty {
+    grid-column: 1 / -1; padding: 24px; text-align: center;
+    color: var(--muted); font-size: 0.8rem;
+  }
+
   /* ===================== GAME MODE ===================== */
   .game-mode-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
   .game-mode-option { background: var(--card-bg); border: 2px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; cursor: pointer; transition: var(--trans); }
@@ -294,7 +367,6 @@
   .market-deck-author { font-size: 0.7rem; color: var(--muted); margin-top: 4px; font-style: italic; }
   .market-download-count { font-size: 0.72rem; color: var(--green); letter-spacing: 0.06em; margin-top: 6px; font-weight: bold; position: relative; z-index: 1; }
 
-
   /* ===================== MISC ===================== */
   .separator { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
   .text-muted { color: var(--muted); font-size: 0.82rem; }
@@ -392,11 +464,33 @@
       <div class="setup-card">
         <h2>Deck</h2>
         <div class="setup-deck-name" id="setup-deck-name"></div>
-        <div class="form-row">
-          <div class="form-group"><label>Start Card #</label><input type="number" id="inp-start" min="1" value="1"></div>
-          <div class="form-group"><label>End Card #</label><input type="number" id="inp-end" min="1" value="10"></div>
+
+        <!-- Selection mode toggle -->
+        <div class="selection-mode-toggle">
+          <button class="selection-mode-btn active" id="mode-btn-range" onclick="setSelectionMode('range')">⇔ Range</button>
+          <button class="selection-mode-btn" id="mode-btn-pick" onclick="setSelectionMode('pick')">☑ Pick Cards</button>
         </div>
-        <p class="range-info" id="range-info"></p>
+
+        <!-- Range mode -->
+        <div id="range-section">
+          <div class="form-row">
+            <div class="form-group"><label>Start Card #</label><input type="number" id="inp-start" min="1" value="1"></div>
+            <div class="form-group"><label>End Card #</label><input type="number" id="inp-end" min="1" value="10"></div>
+          </div>
+          <p class="range-info" id="range-info"></p>
+        </div>
+
+        <!-- Pick cards mode -->
+        <div id="card-picker-section">
+          <input type="text" class="card-picker-search" id="picker-search" placeholder="Search cards..." oninput="filterPickerCards()">
+          <div class="card-picker-controls">
+            <button class="btn btn-sm" onclick="selectAllPickerCards()">Select All</button>
+            <button class="btn btn-sm" onclick="clearPickerCards()">Clear</button>
+            <span class="picker-info" id="picker-info">0 selected</span>
+          </div>
+          <div class="card-picker-grid" id="card-picker-grid"></div>
+        </div>
+
         <div class="setup-actions">
           <button class="btn btn-sm" onclick="navigate('deck')">← Back</button>
           <button class="btn btn-primary" onclick="startQuiz()">▶ Begin</button>
@@ -451,7 +545,7 @@
         <div class="results-message" id="results-message"></div>
       </div>
       <div class="results-actions">
-        <button class="btn btn-primary" onclick="retryQuiz()">↺ Retry Range</button>
+        <button class="btn btn-primary" onclick="retryQuiz()">↺ Retry</button>
         <button class="btn" onclick="navigate('deck')">Edit Deck</button>
         <button class="btn" onclick="navigate('home')">← All Decks</button>
       </div>
@@ -514,21 +608,16 @@
       <div><h1>市場 Community Market</h1><p class="subtitle">Discover and share flashcard decks — powered by live database</p></div>
       <button class="btn btn-sm" onclick="navigate('home')">← Back</button>
     </div>
-
-
-
     <div class="market-header">
       <div class="search-bar">
         <input type="text" id="market-search" placeholder="Search decks..." onkeyup="filterMarketDecks()">
       </div>
       <button class="btn btn-primary" onclick="openShareModal()">↑ Share a Deck</button>
     </div>
-
     <div id="market-loading" style="text-align:center;padding:40px;color:var(--muted);font-size:0.85rem;display:none">
       <div style="font-family:'Zen Old Mincho',serif;font-size:3rem;opacity:0.2;margin-bottom:12px">読</div>
       Loading decks from database...
     </div>
-
     <div class="deck-grid" id="market-deck-list"></div>
   </div>
 
@@ -587,54 +676,11 @@
 
 <script>
 /* =====================================================================
-   ██████  ██████      ██████  ██████  ███    ██ ███████ ██  ██████
-  ██    ██ ██   ██    ██      ██    ██ ████   ██ ██      ██ ██
-  ██    ██ ██████     ██      ██    ██ ██ ██  ██ █████   ██ ██   ███
-  ██    ██ ██   ██    ██      ██    ██ ██  ██ ██ ██      ██ ██    ██
-   ██████  ██████      ██████  ██████  ██   ████ ██      ██  ██████
-
-  ╔══════════════════════════════════════════════════════════════╗
-  ║  STEP 1: Create a free Supabase project at supabase.com     ║
-  ║  STEP 2: Go to SQL Editor and run the SQL below             ║
-  ║  STEP 3: Go to Settings > API and copy your URL + anon key  ║
-  ║  STEP 4: Paste them into the two constants below            ║
-  ╚══════════════════════════════════════════════════════════════╝
-
-  SQL to run in Supabase SQL Editor:
-  ─────────────────────────────────
-  create table market_decks (
-    id uuid primary key default gen_random_uuid(),
-    name text not null,
-    author_name text default 'Anonymous',
-    cards jsonb not null,
-    downloads integer default 0,
-    created_at timestamptz default now()
-  );
-
-  alter table market_decks enable row level security;
-
-  create policy "Anyone can read decks"
-    on market_decks for select using (true);
-
-  create policy "Anyone can insert decks"
-    on market_decks for insert with check (true);
-
-  create policy "Anyone can update downloads"
-    on market_decks for update using (true) with check (true);
-
-  -- Already have the table? Just run these instead:
-  -- alter table market_decks add column downloads integer default 0;
-  -- create policy "Anyone can update downloads" on market_decks for update using (true) with check (true);
-  ─────────────────────────────────
-
+   SUPABASE CONFIG
 ===================================================================== */
+const SUPABASE_URL = 'https://sfbviebtejdnukngcebj.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmYnZpZWJ0ZWpkbnVrbmdjZWJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MTE2MDIsImV4cCI6MjA4Njk4NzYwMn0.EACJYcVJ0Il2aefLULgMBWbAtzTlnF3z0-WrbCTyK3E';
 
-const SUPABASE_URL = 'https://sfbviebtejdnukngcebj.supabase.co';       // e.g. https://xyzxyz.supabase.co
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmYnZpZWJ0ZWpkbnVrbmdjZWJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MTE2MDIsImV4cCI6MjA4Njk4NzYwMn0.EACJYcVJ0Il2aefLULgMBWbAtzTlnF3z0-WrbCTyK3E'; // long string starting with eyJ...
-
-/* =====================================================================
-   SUPABASE API HELPERS
-===================================================================== */
 async function sbFetch(path, options = {}) {
   const url = `${SUPABASE_URL}/rest/v1/${path}`;
   const res = await fetch(url, {
@@ -647,47 +693,15 @@ async function sbFetch(path, options = {}) {
       ...(options.headers || {})
     }
   });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`HTTP ${res.status}: ${errText}`);
-  }
-
+  if (!res.ok) { const errText = await res.text(); throw new Error(`HTTP ${res.status}: ${errText}`); }
   const text = await res.text();
   return text ? JSON.parse(text) : null;
 }
 
-async function dbGetAllDecks() {
-  return await sbFetch('market_decks?select=*&order=downloads.desc,created_at.desc');
-}
-
-async function dbInsertDeck(name, authorName, cards) {
-  return await sbFetch('market_decks', {
-    method: 'POST',
-    body: JSON.stringify({ name, author_name: authorName, cards })
-  });
-}
-
-async function dbDeleteDeck(id) {
-  return await sbFetch(`market_decks?id=eq.${id}`, {
-    method: 'DELETE'
-  });
-}
-
-async function dbIncrementDownloads(id, currentDownloads) {
-  return await sbFetch(`market_decks?id=eq.${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ downloads: currentDownloads + 1 })
-  });
-}
-
-/* Check if Supabase is configured */
-function isSupabaseConfigured() {
-  return SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY_HERE';
-}
-
-
-
+async function dbGetAllDecks() { return await sbFetch('market_decks?select=*&order=downloads.desc,created_at.desc'); }
+async function dbInsertDeck(name, authorName, cards) { return await sbFetch('market_decks', { method: 'POST', body: JSON.stringify({ name, author_name: authorName, cards }) }); }
+async function dbIncrementDownloads(id, currentDownloads) { return await sbFetch(`market_decks?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ downloads: currentDownloads + 1 }) }); }
+function isSupabaseConfigured() { return SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY_HERE'; }
 
 /* =====================================================================
    STATE & PERSISTENCE
@@ -697,6 +711,8 @@ let state = {
   currentDeck: null,
   editingCard: null,
   gameMode: 'multiple-choice',
+  selectionMode: 'range',       // 'range' | 'pick'
+  pickedCardIndices: new Set(),  // selected card indices in pick mode
   quiz: { cards: [], index: 0, correct: 0, wrong: 0, startIdx: 0, endIdx: 0, answered: false },
   memory: { cards: [], flipped: [], matched: [], moves: 0, pairsFound: 0 },
   marketDecks: [],
@@ -705,10 +721,8 @@ let state = {
 
 function save() { localStorage.setItem('jpquiz_decks', JSON.stringify(state.decks)); }
 function load() {
-  try {
-    const raw = localStorage.getItem('jpquiz_decks');
-    if (raw) state.decks = JSON.parse(raw);
-  } catch(e) { state.decks = {}; }
+  try { const raw = localStorage.getItem('jpquiz_decks'); if (raw) state.decks = JSON.parse(raw); }
+  catch(e) { state.decks = {}; }
 }
 
 /* =====================================================================
@@ -894,7 +908,7 @@ function deleteCard(i) {
 }
 
 /* =====================================================================
-   QUIZ SETUP
+   QUIZ SETUP — SELECTION MODES
 ===================================================================== */
 function renderSetup() {
   const deck = state.decks[state.currentDeck];
@@ -915,6 +929,102 @@ function renderSetup() {
   });
   document.getElementById('inp-start').addEventListener('input', updateRangeInfo);
   document.getElementById('inp-end').addEventListener('input', updateRangeInfo);
+
+  // Reset picker state when opening setup
+  state.pickedCardIndices = new Set();
+  setSelectionMode(state.selectionMode || 'range');
+}
+
+function setSelectionMode(mode) {
+  state.selectionMode = mode;
+  document.getElementById('mode-btn-range').classList.toggle('active', mode === 'range');
+  document.getElementById('mode-btn-pick').classList.toggle('active', mode === 'pick');
+  document.getElementById('range-section').style.display = mode === 'range' ? 'block' : 'none';
+  document.getElementById('card-picker-section').style.display = mode === 'pick' ? 'block' : 'none';
+  if (mode === 'pick') renderPickerGrid();
+}
+
+function renderPickerGrid() {
+  const deck = state.decks[state.currentDeck];
+  const grid = document.getElementById('card-picker-grid');
+  const searchVal = (document.getElementById('picker-search').value || '').toLowerCase();
+  if (deck.cards.length === 0) {
+    grid.innerHTML = `<div class="card-picker-empty">No cards in this deck.</div>`;
+    updatePickerInfo();
+    return;
+  }
+  grid.innerHTML = deck.cards.map((c, i) => {
+    const isSelected = state.pickedCardIndices.has(i);
+    const matchesSearch = !searchVal ||
+      c.japanese.toLowerCase().includes(searchVal) ||
+      c.meaning.toLowerCase().includes(searchVal) ||
+      (c.reading && c.reading.toLowerCase().includes(searchVal));
+    return `<div class="picker-card${isSelected ? ' selected' : ''}${!matchesSearch ? ' hidden-by-search' : ''}"
+        data-index="${i}" onclick="togglePickerCard(${i})">
+      <span class="picker-card-num">${i+1}</span>
+      <span class="picker-card-check">✓</span>
+      <div class="picker-card-japanese">${esc(c.japanese)}</div>
+      <div class="picker-card-reading">${esc(c.reading || '')}</div>
+      <div class="picker-card-meaning">${esc(c.meaning)}</div>
+    </div>`;
+  }).join('');
+  const visible = grid.querySelectorAll('.picker-card:not(.hidden-by-search)');
+  if (visible.length === 0) {
+    grid.innerHTML += `<div class="card-picker-empty">No cards match your search.</div>`;
+  }
+  updatePickerInfo();
+}
+
+function togglePickerCard(index) {
+  if (state.pickedCardIndices.has(index)) {
+    state.pickedCardIndices.delete(index);
+  } else {
+    state.pickedCardIndices.add(index);
+  }
+  // Update just this card's visual state without full re-render (snappy feel)
+  const el = document.querySelector(`.picker-card[data-index="${index}"]`);
+  if (el) el.classList.toggle('selected', state.pickedCardIndices.has(index));
+  updatePickerInfo();
+}
+
+function selectAllPickerCards() {
+  const deck = state.decks[state.currentDeck];
+  const searchVal = (document.getElementById('picker-search').value || '').toLowerCase();
+  deck.cards.forEach((c, i) => {
+    const matchesSearch = !searchVal ||
+      c.japanese.toLowerCase().includes(searchVal) ||
+      c.meaning.toLowerCase().includes(searchVal) ||
+      (c.reading && c.reading.toLowerCase().includes(searchVal));
+    if (matchesSearch) state.pickedCardIndices.add(i);
+  });
+  renderPickerGrid();
+}
+
+function clearPickerCards() {
+  const searchVal = (document.getElementById('picker-search').value || '').toLowerCase();
+  if (searchVal) {
+    // Only clear visible/filtered cards
+    const deck = state.decks[state.currentDeck];
+    deck.cards.forEach((c, i) => {
+      const matchesSearch =
+        c.japanese.toLowerCase().includes(searchVal) ||
+        c.meaning.toLowerCase().includes(searchVal) ||
+        (c.reading && c.reading.toLowerCase().includes(searchVal));
+      if (matchesSearch) state.pickedCardIndices.delete(i);
+    });
+  } else {
+    state.pickedCardIndices.clear();
+  }
+  renderPickerGrid();
+}
+
+function filterPickerCards() {
+  renderPickerGrid();
+}
+
+function updatePickerInfo() {
+  const count = state.pickedCardIndices.size;
+  document.getElementById('picker-info').textContent = `${count} selected`;
 }
 
 function updateRangeInfo() {
@@ -930,12 +1040,20 @@ function updateRangeInfo() {
 function startQuiz() {
   const deck = state.decks[state.currentDeck];
   const total = deck.cards.length;
-  let s = Math.max(1, Math.min(parseInt(document.getElementById('inp-start').value), total));
-  let e = Math.max(s, Math.min(parseInt(document.getElementById('inp-end').value), total));
-  const cards = deck.cards.slice(s - 1, e);
-  if (cards.length === 0) { notify('No cards in that range.', true); return; }
+  let cards;
+
+  if (state.selectionMode === 'pick') {
+    if (state.pickedCardIndices.size === 0) { notify('Please select at least one card.', true); return; }
+    cards = [...state.pickedCardIndices].sort((a,b) => a - b).map(i => deck.cards[i]);
+  } else {
+    let s = Math.max(1, Math.min(parseInt(document.getElementById('inp-start').value), total));
+    let e = Math.max(s, Math.min(parseInt(document.getElementById('inp-end').value), total));
+    cards = deck.cards.slice(s - 1, e);
+    if (cards.length === 0) { notify('No cards in that range.', true); return; }
+  }
+
   const shuffled = [...cards].sort(() => Math.random() - 0.5);
-  state.quiz = { cards: shuffled, allCards: deck.cards, index: 0, correct: 0, wrong: 0, startIdx: s, endIdx: e, answered: false };
+  state.quiz = { cards: shuffled, allCards: deck.cards, index: 0, correct: 0, wrong: 0, answered: false };
   if (state.gameMode === 'memory') { startMemoryGame(cards); }
   else { navigate('quiz'); state.gameMode === 'flashcard' ? renderFlashcard() : renderQuizQuestion(); }
 }
@@ -1242,37 +1360,23 @@ function retryQuiz() {
 }
 
 /* =====================================================================
-   MARKET — DATABASE BACKED
+   MARKET
 ===================================================================== */
 async function renderMarket() {
-const list = document.getElementById('market-deck-list');
+  const list = document.getElementById('market-deck-list');
   const loading = document.getElementById('market-loading');
-
   if (!isSupabaseConfigured()) {
-    list.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
-      <span class="empty-kanji">設</span>
-      <p><strong>Database not configured yet.</strong></p>
-      <p style="margin-top:8px;font-size:0.82rem">Follow the setup instructions above in the test panel.</p>
-    </div>`;
+    list.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-kanji">設</span><p><strong>Database not configured yet.</strong></p></div>`;
     return;
   }
-
-  loading.style.display = 'block';
-  list.innerHTML = '';
-
+  loading.style.display = 'block'; list.innerHTML = '';
   try {
     const decks = await dbGetAllDecks();
-    state.allMarketDecks = decks;
-    state.marketDecks = [...decks];
-    loading.style.display = 'none';
-    displayMarketDecks();
+    state.allMarketDecks = decks; state.marketDecks = [...decks];
+    loading.style.display = 'none'; displayMarketDecks();
   } catch(e) {
     loading.style.display = 'none';
-    list.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
-      <span class="empty-kanji">錯</span>
-      <p>Could not load decks from database.</p>
-      <p style="font-size:0.75rem;margin-top:8px;color:var(--red)">${esc(e.message)}</p>
-    </div>`;
+    list.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-kanji">錯</span><p>Could not load decks from database.</p><p style="font-size:0.75rem;margin-top:8px;color:var(--red)">${esc(e.message)}</p></div>`;
   }
 }
 
@@ -1303,9 +1407,7 @@ function displayMarketDecks() {
 
 function filterMarketDecks() {
   const query = document.getElementById('market-search').value.toLowerCase().trim();
-  state.marketDecks = query
-    ? state.allMarketDecks.filter(d => d.name.toLowerCase().includes(query) || (d.author_name || '').toLowerCase().includes(query))
-    : [...state.allMarketDecks];
+  state.marketDecks = query ? state.allMarketDecks.filter(d => d.name.toLowerCase().includes(query) || (d.author_name || '').toLowerCase().includes(query)) : [...state.allMarketDecks];
   displayMarketDecks();
 }
 
@@ -1313,31 +1415,18 @@ async function addMarketDeckToMyDecks(marketDeckId, currentDownloads) {
   const marketDeck = state.allMarketDecks.find(d => d.id === marketDeckId);
   if (!marketDeck) { notify('Deck not found.', true); return; }
   const newDeckId = 'deck_' + Date.now();
-  state.decks[newDeckId] = {
-    name: marketDeck.name + ' (from Market)',
-    cards: marketDeck.cards.map(c => ({ japanese: c.japanese, reading: c.reading, meaning: c.meaning }))
-  };
-  save();
-  notify(`Added "${marketDeck.name}" to your decks!`);
-  // Increment download counter
+  state.decks[newDeckId] = { name: marketDeck.name + ' (from Market)', cards: marketDeck.cards.map(c => ({ japanese: c.japanese, reading: c.reading, meaning: c.meaning })) };
+  save(); notify(`Added "${marketDeck.name}" to your decks!`);
   try {
     await dbIncrementDownloads(marketDeckId, currentDownloads);
-    // Update local state so counter reflects immediately
-    const deck = state.allMarketDecks.find(d => d.id === marketDeckId);
-    if (deck) deck.downloads = currentDownloads + 1;
-    const deck2 = state.marketDecks.find(d => d.id === marketDeckId);
-    if (deck2) deck2.downloads = currentDownloads + 1;
+    const deck = state.allMarketDecks.find(d => d.id === marketDeckId); if (deck) deck.downloads = currentDownloads + 1;
+    const deck2 = state.marketDecks.find(d => d.id === marketDeckId); if (deck2) deck2.downloads = currentDownloads + 1;
     displayMarketDecks();
-  } catch(e) { /* silently fail, download count not critical */ }
+  } catch(e) { /* silently fail */ }
 }
 
-
-
 function openShareModal() {
-  if (!isSupabaseConfigured()) {
-    notify('Set up Supabase first! See the test panel above.', true);
-    return;
-  }
+  if (!isSupabaseConfigured()) { notify('Set up Supabase first!', true); return; }
   const sel = document.getElementById('share-deck-select');
   const ids = Object.keys(state.decks);
   sel.innerHTML = '<option value="">Select a deck...</option>';
@@ -1361,14 +1450,10 @@ async function shareDeckToDB() {
   btn.disabled = true; btn.textContent = 'Sharing…';
   try {
     await dbInsertDeck(deck.name, authorName, deck.cards);
-    closeModal('modal-share-deck');
-    notify(`"${deck.name}" is now live in the market! 🎉`);
+    closeModal('modal-share-deck'); notify(`"${deck.name}" is now live in the market! 🎉`);
     await renderMarket();
-  } catch(e) {
-    notify('Share failed: ' + e.message, true);
-  } finally {
-    btn.disabled = false; btn.textContent = '↑ Share to Market';
-  }
+  } catch(e) { notify('Share failed: ' + e.message, true); }
+  finally { btn.disabled = false; btn.textContent = '↑ Share to Market'; }
 }
 
 /* =====================================================================
