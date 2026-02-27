@@ -390,6 +390,7 @@
     <span class="logo-kanji" onclick="navigate('home')" style="cursor:pointer" title="Home">漢字</span>
     <span class="logo-text">Japanese Flashcard Quiz</span>
     <a class="nav-link" onclick="navigate('market')" style="cursor:pointer;margin-left:auto;margin-right:20px;font-size:0.75rem;color:var(--ink);text-decoration:none;letter-spacing:0.1em;padding:4px 8px;border-bottom:2px solid transparent;transition:var(--trans);" onmouseover="this.style.color='var(--red)';this.style.borderBottomColor='var(--red)'" onmouseout="this.style.color='var(--ink)';this.style.borderBottomColor='transparent'">市場 MARKET</a>
+    <button id="tts-toggle-btn" onclick="toggleTTS()" title="Toggle voice reading" style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:2px solid var(--ink);background:var(--ink);color:var(--paper);font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.08em;cursor:pointer;border-radius:var(--radius);transition:var(--trans);text-transform:uppercase;white-space:nowrap;margin-right:16px;">🔊 Voice On</button>
     <nav class="breadcrumb" id="breadcrumb"></nav>
   </header>
 
@@ -1099,6 +1100,7 @@ function renderQuizQuestion() {
 function renderMultipleChoice(card) {
   const q = state.quiz;
   document.getElementById('quiz-char').textContent = card.japanese;
+  ttsSpeak(card.japanese);
   const correct = card.meaning;
   const pool = q.allCards.filter(c => c.meaning !== correct).map(c => c.meaning).sort(() => Math.random() - 0.5);
   const distractors = pool.slice(0, 3);
@@ -1113,6 +1115,8 @@ function renderMultipleChoice(card) {
 function renderTypingMode(card) {
   const q = state.quiz;
   document.getElementById('quiz-char').textContent = card.meaning;
+  // Speak Japanese so user can hear what they're trying to write
+  ttsSpeak(card.japanese);
   document.getElementById('options-grid').style.display = 'none';
   let container = document.getElementById('typing-container');
   if (!container) {
@@ -1174,6 +1178,8 @@ function romajiToHiragana(romaji) {
 
 function renderReverseMode(card) {
   document.getElementById('quiz-char').textContent = card.meaning;
+  // In reverse mode we show meaning → guess Japanese; speak the meaning in English (no TTS needed for meaning)
+  // We'll speak the Japanese when answer is shown via selectAnswer hook
   const correct = card.japanese;
   const pool = state.quiz.allCards.filter(c => c.japanese !== correct).map(c => c.japanese).sort(() => Math.random() - 0.5);
   const distractors = pool.slice(0, 3);
@@ -1203,6 +1209,7 @@ function renderFlashcard() {
     <div class="flashcard-back"><div class="flashcard-meaning">${esc(card.meaning)}</div><div class="flashcard-reading">${esc(card.reading)}</div></div>
     <div class="flashcard-hint">Tap to reveal</div></div>`;
   container.style.display = 'block';
+  ttsSpeak(card.japanese);
 }
 
 function revealFlashcard() {
@@ -1213,6 +1220,8 @@ function revealFlashcard() {
   state.quiz.correct++;
   document.getElementById('live-correct').textContent = `✓ ${state.quiz.correct}`;
   document.getElementById('next-btn').style.display = 'inline-flex';
+  const card = state.quiz.cards[state.quiz.index];
+  ttsSpeak(card.reading || card.japanese);
 }
 
 function selectAnswer(btn, chosen, correct) {
@@ -1233,7 +1242,7 @@ function selectAnswer(btn, chosen, correct) {
   document.getElementById('quiz-back-reading').textContent = card.reading ? `(${card.reading})` : '';
   document.getElementById('quiz-back-label').textContent  = isCorrect ? 'Correct!' : `You chose: ${chosen}`;
   back.classList.add(isCorrect ? 'correct' : 'wrong');
-  setTimeout(() => { inner.classList.add('flipped'); document.getElementById('next-btn').style.display = 'inline-flex'; }, 300);
+  setTimeout(() => { inner.classList.add('flipped'); document.getElementById('next-btn').style.display = 'inline-flex'; ttsSpeak(card.japanese); }, 300);
 }
 
 function nextQuestion() {
@@ -1479,6 +1488,45 @@ function esc(str) {
 }
 
 document.getElementById('inp-meaning').addEventListener('keydown', e => { if (e.key === 'Enter') saveCard(); });
+
+/* =====================================================================
+   TEXT-TO-SPEECH
+===================================================================== */
+let ttsEnabled = true; // on by default
+
+function toggleTTS() {
+  ttsEnabled = !ttsEnabled;
+  const btn = document.getElementById('tts-toggle-btn');
+  if (ttsEnabled) {
+    btn.textContent = '🔊 Voice On';
+    btn.style.background = 'var(--ink)';
+    btn.style.color = 'var(--paper)';
+    btn.style.borderColor = 'var(--ink)';
+  } else {
+    btn.textContent = '🔇 Voice Off';
+    btn.style.background = 'transparent';
+    btn.style.color = 'var(--muted)';
+    btn.style.borderColor = 'var(--border)';
+    window.speechSynthesis.cancel();
+  }
+}
+
+function ttsSpeak(text) {
+  if (!ttsEnabled || !text || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'ja-JP';
+  utter.rate = 0.9;
+  utter.pitch = 1.0;
+  const voices = window.speechSynthesis.getVoices();
+  const jaVoice = voices.find(v => v.lang.startsWith('ja'));
+  if (jaVoice) utter.voice = jaVoice;
+  window.speechSynthesis.speak(utter);
+}
+
+if (window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = () => { /* voices ready */ };
+}
 
 /* =====================================================================
    IMPORT
