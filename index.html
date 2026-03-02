@@ -245,6 +245,31 @@
     color: var(--muted); font-size: 0.8rem;
   }
 
+  /* ---- Random from Range ---- */
+  #random-range-section { display: none; }
+  .random-range-box {
+    background: var(--paper); border: 2px solid var(--border); border-radius: var(--radius);
+    padding: 16px; margin-top: 4px;
+  }
+  .random-range-toggle {
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    font-size: 0.78rem; color: var(--muted); letter-spacing: 0.06em; margin-top: 14px;
+    user-select: none;
+  }
+  .random-range-toggle input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--red); }
+  .random-range-toggle span { transition: color var(--trans); }
+  .random-range-toggle:hover span { color: var(--ink); }
+  .random-range-inner { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .random-count-row { display: flex; align-items: center; gap: 12px; }
+  .random-count-row input[type="number"] { width: 90px; flex-shrink: 0; }
+  .random-count-label { font-size: 0.78rem; color: var(--muted); }
+  .random-preview-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--red); color: white; font-size: 0.7rem; letter-spacing: 0.1em;
+    padding: 3px 10px; border-radius: 99px; margin-top: 10px;
+    text-transform: uppercase;
+  }
+
   /* ===================== GAME MODE ===================== */
   .game-mode-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
   .game-mode-option { background: var(--card-bg); border: 2px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; cursor: pointer; transition: var(--trans); }
@@ -479,6 +504,26 @@
             <div class="form-group"><label>End Card #</label><input type="number" id="inp-end" min="1" value="10"></div>
           </div>
           <p class="range-info" id="range-info"></p>
+
+          <!-- Random from Range toggle -->
+          <label class="random-range-toggle" for="chk-random-range">
+            <input type="checkbox" id="chk-random-range" onchange="toggleRandomRange()">
+            <span>🎲 Pick random cards from this range</span>
+          </label>
+
+          <!-- Random count input (shown when checkbox is ticked) -->
+          <div id="random-range-inner" class="random-range-inner" style="display:none">
+            <div class="random-count-row">
+              <div>
+                <label>Number of random cards</label>
+                <input type="number" id="inp-random-count" min="1" value="10" oninput="updateRandomInfo()">
+              </div>
+              <span class="random-count-label" id="random-count-label"></span>
+            </div>
+            <div id="random-preview-badge" class="random-preview-badge" style="display:none">
+              🎲 <span id="random-badge-text"></span>
+            </div>
+          </div>
         </div>
 
         <!-- Pick cards mode -->
@@ -713,7 +758,11 @@ let state = {
   editingCard: null,
   gameMode: 'multiple-choice',
   selectionMode: 'range',       // 'range' | 'pick'
-  pickedCardIndices: new Set(),  // selected card indices in pick mode
+  pickedCardIndices: new Set(),
+  // Random-from-range settings (persisted per session so Retry works)
+  randomRangeEnabled: false,
+  randomRangePool: [],    // the full pool (deck slice) used to draw from
+  randomRangeCount: 10,
   quiz: { cards: [], index: 0, correct: 0, wrong: 0, startIdx: 0, endIdx: 0, answered: false },
   memory: { cards: [], flipped: [], matched: [], moves: 0, pairsFound: 0 },
   marketDecks: [],
@@ -920,6 +969,13 @@ function renderSetup() {
   document.getElementById('inp-start').value = 1;
   document.getElementById('inp-end').value = Math.min(10, total);
   updateRangeInfo();
+
+  // Reset random range UI
+  document.getElementById('chk-random-range').checked = false;
+  document.getElementById('random-range-inner').style.display = 'none';
+  document.getElementById('inp-random-count').value = 10;
+  document.getElementById('random-preview-badge').style.display = 'none';
+
   document.querySelectorAll('.game-mode-option').forEach(option => {
     option.classList.toggle('selected', option.dataset.mode === state.gameMode);
     option.onclick = function() {
@@ -928,8 +984,8 @@ function renderSetup() {
       this.classList.add('selected');
     };
   });
-  document.getElementById('inp-start').addEventListener('input', updateRangeInfo);
-  document.getElementById('inp-end').addEventListener('input', updateRangeInfo);
+  document.getElementById('inp-start').addEventListener('input', () => { updateRangeInfo(); updateRandomInfo(); });
+  document.getElementById('inp-end').addEventListener('input', () => { updateRangeInfo(); updateRandomInfo(); });
 
   // Reset picker state when opening setup
   state.pickedCardIndices = new Set();
@@ -945,6 +1001,43 @@ function setSelectionMode(mode) {
   if (mode === 'pick') renderPickerGrid();
 }
 
+/* =====================================================================
+   RANDOM FROM RANGE
+===================================================================== */
+function toggleRandomRange() {
+  const enabled = document.getElementById('chk-random-range').checked;
+  document.getElementById('random-range-inner').style.display = enabled ? 'block' : 'none';
+  if (enabled) updateRandomInfo();
+  else document.getElementById('random-preview-badge').style.display = 'none';
+}
+
+function updateRandomInfo() {
+  const enabled = document.getElementById('chk-random-range').checked;
+  if (!enabled) return;
+  const deck = state.decks[state.currentDeck];
+  const total = deck.cards.length;
+  const s = Math.max(1, Math.min(parseInt(document.getElementById('inp-start').value) || 1, total));
+  const e = Math.max(s, Math.min(parseInt(document.getElementById('inp-end').value) || 1, total));
+  const poolSize = e - s + 1;
+  const maxCount = poolSize;
+  const inp = document.getElementById('inp-random-count');
+  inp.max = maxCount;
+  let count = Math.max(1, Math.min(parseInt(inp.value) || 10, maxCount));
+  if (parseInt(inp.value) > maxCount) inp.value = maxCount;
+  document.getElementById('random-count-label').textContent = `of ${poolSize} available`;
+  const badge = document.getElementById('random-preview-badge');
+  badge.style.display = 'inline-flex';
+  document.getElementById('random-badge-text').textContent = `${count} random from cards ${s}–${e}`;
+}
+
+function pickRandomFromRange(pool, count) {
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
+
+/* =====================================================================
+   CARD PICKER (Pick Mode)
+===================================================================== */
 function renderPickerGrid() {
   const deck = state.decks[state.currentDeck];
   const grid = document.getElementById('card-picker-grid');
@@ -982,7 +1075,6 @@ function togglePickerCard(index) {
   } else {
     state.pickedCardIndices.add(index);
   }
-  // Update just this card's visual state without full re-render (snappy feel)
   const el = document.querySelector(`.picker-card[data-index="${index}"]`);
   if (el) el.classList.toggle('selected', state.pickedCardIndices.has(index));
   updatePickerInfo();
@@ -1004,7 +1096,6 @@ function selectAllPickerCards() {
 function clearPickerCards() {
   const searchVal = (document.getElementById('picker-search').value || '').toLowerCase();
   if (searchVal) {
-    // Only clear visible/filtered cards
     const deck = state.decks[state.currentDeck];
     deck.cards.forEach((c, i) => {
       const matchesSearch =
@@ -1019,9 +1110,7 @@ function clearPickerCards() {
   renderPickerGrid();
 }
 
-function filterPickerCards() {
-  renderPickerGrid();
-}
+function filterPickerCards() { renderPickerGrid(); }
 
 function updatePickerInfo() {
   const count = state.pickedCardIndices.size;
@@ -1038,6 +1127,9 @@ function updateRangeInfo() {
     `${total} total cards — this will quiz ${count} card${count !== 1 ? 's' : ''} (cards ${s}–${Math.min(e, total)})`;
 }
 
+/* =====================================================================
+   START QUIZ
+===================================================================== */
 function startQuiz() {
   const deck = state.decks[state.currentDeck];
   const total = deck.cards.length;
@@ -1046,11 +1138,26 @@ function startQuiz() {
   if (state.selectionMode === 'pick') {
     if (state.pickedCardIndices.size === 0) { notify('Please select at least one card.', true); return; }
     cards = [...state.pickedCardIndices].sort((a,b) => a - b).map(i => deck.cards[i]);
+    // Disable random range for pick mode
+    state.randomRangeEnabled = false;
   } else {
     let s = Math.max(1, Math.min(parseInt(document.getElementById('inp-start').value), total));
     let e = Math.max(s, Math.min(parseInt(document.getElementById('inp-end').value), total));
-    cards = deck.cards.slice(s - 1, e);
-    if (cards.length === 0) { notify('No cards in that range.', true); return; }
+    const pool = deck.cards.slice(s - 1, e);
+    if (pool.length === 0) { notify('No cards in that range.', true); return; }
+
+    const randomEnabled = document.getElementById('chk-random-range').checked;
+    if (randomEnabled) {
+      const count = Math.max(1, Math.min(parseInt(document.getElementById('inp-random-count').value) || 10, pool.length));
+      // Save settings so Retry can re-use them
+      state.randomRangeEnabled = true;
+      state.randomRangePool = pool;
+      state.randomRangeCount = count;
+      cards = pickRandomFromRange(pool, count);
+    } else {
+      state.randomRangeEnabled = false;
+      cards = pool;
+    }
   }
 
   const shuffled = [...cards].sort(() => Math.random() - 0.5);
@@ -1115,7 +1222,6 @@ function renderMultipleChoice(card) {
 function renderTypingMode(card) {
   const q = state.quiz;
   document.getElementById('quiz-char').textContent = card.meaning;
-  // Speak Japanese so user can hear what they're trying to write
   ttsSpeak(card.japanese);
   document.getElementById('options-grid').style.display = 'none';
   let container = document.getElementById('typing-container');
@@ -1178,8 +1284,6 @@ function romajiToHiragana(romaji) {
 
 function renderReverseMode(card) {
   document.getElementById('quiz-char').textContent = card.meaning;
-  // In reverse mode we show meaning → guess Japanese; speak the meaning in English (no TTS needed for meaning)
-  // We'll speak the Japanese when answer is shown via selectAnswer hook
   const correct = card.japanese;
   const pool = state.quiz.allCards.filter(c => c.japanese !== correct).map(c => c.japanese).sort(() => Math.random() - 0.5);
   const distractors = pool.slice(0, 3);
@@ -1362,7 +1466,18 @@ function renderResults() {
 
 function retryQuiz() {
   if (state.gameMode === 'memory') { startMemoryGame(state.quiz.cards); return; }
-  state.quiz.cards = [...state.quiz.cards].sort(() => Math.random() - 0.5);
+
+  let cards;
+  if (state.randomRangeEnabled && state.randomRangePool && state.randomRangePool.length > 0) {
+    // Draw a fresh random selection from the same pool
+    cards = pickRandomFromRange(state.randomRangePool, state.randomRangeCount);
+    notify(`🎲 New random selection of ${cards.length} cards!`);
+  } else {
+    cards = state.quiz.cards;
+  }
+
+  const shuffled = [...cards].sort(() => Math.random() - 0.5);
+  state.quiz.cards = shuffled;
   state.quiz.index = 0; state.quiz.correct = 0; state.quiz.wrong = 0; state.quiz.answered = false;
   navigate('quiz');
   state.gameMode === 'flashcard' ? renderFlashcard() : renderQuizQuestion();
@@ -1492,7 +1607,7 @@ document.getElementById('inp-meaning').addEventListener('keydown', e => { if (e.
 /* =====================================================================
    TEXT-TO-SPEECH
 ===================================================================== */
-let ttsEnabled = true; // on by default
+let ttsEnabled = true;
 
 function toggleTTS() {
   ttsEnabled = !ttsEnabled;
