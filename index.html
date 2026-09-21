@@ -392,6 +392,11 @@
   .market-deck-author { font-size: 0.7rem; color: var(--muted); margin-top: 4px; font-style: italic; }
   .market-download-count { font-size: 0.72rem; color: var(--green); letter-spacing: 0.06em; margin-top: 6px; font-weight: bold; position: relative; z-index: 1; }
 
+  /* ===================== QUIZ FONT TOGGLE ===================== */
+  #screen-quiz.standard-font *:not(#font-toggle-btn) {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif !important;
+  }
+
   /* ===================== MISC ===================== */
   .separator { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
   .text-muted { color: var(--muted); font-size: 0.82rem; }
@@ -547,6 +552,9 @@
 
   <!-- ============================================================ SCREEN: QUIZ ============================================================ -->
   <div class="screen" id="screen-quiz">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+      <button class="btn btn-sm" id="font-toggle-btn" onclick="toggleQuizFont()" title="Switch between the original and standard font">Aa Font: Original</button>
+    </div>
     <div class="quiz-progress-bar-wrap"><div class="quiz-progress-bar" id="quiz-progress-bar"></div></div>
     <div class="quiz-meta">
       <span id="quiz-counter">1 / 10</span>
@@ -1739,6 +1747,24 @@ function doImport() {
   save(); notify(`Imported ${parsedImportCards.length} cards into "${state.decks[deckId].name}"!`);
   state.currentDeck = deckId; navigate('deck');
 }
+
+/* =====================================================================
+   QUIZ FONT TOGGLE
+===================================================================== */
+function applyQuizFont(standard) {
+  document.getElementById('screen-quiz').classList.toggle('standard-font', standard);
+  const btn = document.getElementById('font-toggle-btn');
+  btn.classList.toggle('btn-primary', standard);
+  btn.textContent = standard ? 'Aa Font: Standard' : 'Aa Font: Original';
+}
+
+function toggleQuizFont() {
+  const standard = !document.getElementById('screen-quiz').classList.contains('standard-font');
+  applyQuizFont(standard);
+  try { localStorage.setItem('jpquiz_standard_font', standard ? '1' : '0'); } catch(e) {}
+}
+
+try { applyQuizFont(localStorage.getItem('jpquiz_standard_font') === '1'); } catch(e) {}
 
 /* =====================================================================
    INIT
