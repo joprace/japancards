@@ -392,11 +392,6 @@
   .market-deck-author { font-size: 0.7rem; color: var(--muted); margin-top: 4px; font-style: italic; }
   .market-download-count { font-size: 0.72rem; color: var(--green); letter-spacing: 0.06em; margin-top: 6px; font-weight: bold; position: relative; z-index: 1; }
 
-  /* ===================== QUIZ FONT TOGGLE ===================== */
-  #screen-quiz.standard-font *:not(#font-toggle-btn) {
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif !important;
-  }
-
   /* ===================== MISC ===================== */
   .separator { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
   .text-muted { color: var(--muted); font-size: 0.82rem; }
@@ -406,6 +401,53 @@
   .notif { position: fixed; bottom: 24px; right: 24px; background: var(--ink); color: var(--paper); padding: 14px 20px; border-radius: var(--radius); font-size: 0.82rem; letter-spacing: 0.06em; z-index: 200; animation: notifIn 0.3s ease both; max-width: 300px; }
   .notif.error { background: var(--red); }
   @keyframes notifIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ===================== QUIZ FONT TOGGLE ===================== */
+  #screen-quiz.standard-font *:not(#font-toggle-btn) {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif !important;
+  }
+
+  /* ===================== DAILY DOSE ===================== */
+  .dd-deck-checklist {
+    border: 2px solid var(--border); border-radius: var(--radius);
+    max-height: 220px; overflow-y: auto; padding: 6px;
+  }
+  .dd-deck-check-row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+    cursor: pointer; border-radius: var(--radius); transition: var(--trans);
+  }
+  .dd-deck-check-row:hover { background: var(--paper-dark); }
+  .dd-deck-check-row input { width: 16px; height: 16px; accent-color: var(--red); cursor: pointer; }
+  .dd-deck-check-name { font-size: 0.85rem; }
+  .dd-deck-check-count { margin-left: auto; font-size: 0.7rem; color: var(--muted); }
+  .dd-empty-decks { padding: 20px; text-align: center; color: var(--muted); font-size: 0.8rem; }
+
+  .dd-set-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:24px; gap:16px; flex-wrap:wrap; }
+
+  .dd-count-picker { display:flex; align-items:center; gap:14px; margin: 20px 0; }
+  .dd-count-picker input[type="range"] { flex:1; accent-color: var(--red); }
+  .dd-count-value { font-family:'Zen Old Mincho', serif; font-size:1.6rem; font-weight:900; color: var(--red); min-width: 46px; text-align:center; }
+
+  .dd-rate-row { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; max-width:520px; margin: 0 auto 20px; }
+  .dd-rate-btn {
+    padding: 18px 10px; border: 2px solid var(--ink); border-radius: var(--radius);
+    font-family: 'DM Mono', monospace; font-size: 0.8rem; letter-spacing:0.05em;
+    cursor: pointer; transition: var(--trans); background: var(--card-bg); color: var(--ink);
+    display:flex; flex-direction:column; align-items:center; gap:6px; text-transform: uppercase;
+  }
+  .dd-rate-btn .dd-rate-icon { font-size: 1.4rem; }
+  .dd-rate-btn:hover { transform: translateY(-3px); }
+  .dd-rate-green  { border-color: var(--green); }  .dd-rate-green:hover  { background: var(--green); color: white; }
+  .dd-rate-orange { border-color: var(--gold); }   .dd-rate-orange:hover { background: var(--gold-light); color: white; }
+  .dd-rate-red    { border-color: var(--red); }    .dd-rate-red:hover    { background: var(--red); color: white; }
+
+  .dd-set-cards-list { border: 2px solid var(--ink); border-radius: var(--radius); overflow:hidden; margin-bottom:20px; }
+  .dd-set-card-row { display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:10px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--border); font-size:0.85rem; }
+  .dd-set-card-row:last-child { border-bottom:none; }
+  .dd-set-card-jp { font-family:'Noto Serif JP', serif; font-size:1.2rem; }
+  .dd-set-card-meta { font-size:0.68rem; color:var(--muted); }
+
+  .dd-add-panel { background: var(--card-bg); border: 2px solid var(--ink); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
 
   ::-webkit-scrollbar { width: 8px; }
   ::-webkit-scrollbar-track { background: var(--paper); }
@@ -420,6 +462,7 @@
     <span class="logo-kanji" onclick="navigate('home')" style="cursor:pointer" title="Home">漢字</span>
     <span class="logo-text">Japanese Flashcard Quiz</span>
     <a class="nav-link" onclick="navigate('market')" style="cursor:pointer;margin-left:auto;margin-right:20px;font-size:0.75rem;color:var(--ink);text-decoration:none;letter-spacing:0.1em;padding:4px 8px;border-bottom:2px solid transparent;transition:var(--trans);" onmouseover="this.style.color='var(--red)';this.style.borderBottomColor='var(--red)'" onmouseout="this.style.color='var(--ink)';this.style.borderBottomColor='transparent'">市場 MARKET</a>
+    <a class="nav-link" onclick="navigate('dailydose')" style="cursor:pointer;margin-right:20px;font-size:0.75rem;color:var(--ink);text-decoration:none;letter-spacing:0.1em;padding:4px 8px;border-bottom:2px solid transparent;transition:var(--trans);" onmouseover="this.style.color='var(--red)';this.style.borderBottomColor='var(--red)'" onmouseout="this.style.color='var(--ink)';this.style.borderBottomColor='transparent'">常用 DAILY DOSE</a>
     <button id="tts-toggle-btn" onclick="toggleTTS()" title="Toggle voice reading" style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:2px solid var(--ink);background:var(--ink);color:var(--paper);font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.08em;cursor:pointer;border-radius:var(--radius);transition:var(--trans);text-transform:uppercase;white-space:nowrap;margin-right:16px;">🔊 Voice On</button>
     <nav class="breadcrumb" id="breadcrumb"></nav>
   </header>
@@ -675,6 +718,123 @@
     <div class="deck-grid" id="market-deck-list"></div>
   </div>
 
+  <!-- ============================================================ SCREEN: DAILY DOSE HOME ============================================================ -->
+  <div class="screen" id="screen-dailydose">
+    <div class="home-top">
+      <div>
+        <h1>常用 Daily Dose</h1>
+        <p class="subtitle">Adaptive spaced review — pick a set, choose how many cards, and the algorithm does the rest</p>
+      </div>
+      <button class="btn btn-primary" onclick="openNewDailySetModal()">＋ New Set</button>
+    </div>
+    <div class="deck-grid" id="dailydose-set-grid"></div>
+  </div>
+
+  <!-- ============================================================ SCREEN: DAILY DOSE EDIT SET ============================================================ -->
+  <div class="screen" id="screen-dailydose-edit">
+    <div class="dd-set-header">
+      <div>
+        <h1 id="dd-edit-title"></h1>
+        <p class="subtitle" id="dd-edit-subtitle"></p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-sm" onclick="navigate('dailydose')">← Back</button>
+        <button class="btn btn-primary btn-sm" id="dd-start-btn" onclick="navigate('dailydose-setup')">▶ Start Session</button>
+      </div>
+    </div>
+
+    <div class="dd-add-panel">
+      <h2>Add Cards From a Deck</h2>
+      <p class="subtitle" style="margin-bottom:12px">Pick a deck, then pick which cards to add to this set</p>
+      <div class="form-group">
+        <label>Deck</label>
+        <select id="dd-add-deck-select" style="width:100%;padding:10px 12px;border:2px solid var(--border);background:var(--card-bg);font-family:'DM Mono',monospace;font-size:0.8rem;color:var(--ink);border-radius:var(--radius);outline:none;" onchange="renderDDAddPicker()"></select>
+      </div>
+      <input type="text" class="card-picker-search" id="dd-add-search" placeholder="Search cards..." oninput="renderDDAddPicker()">
+      <div class="card-picker-controls">
+        <button class="btn btn-sm" onclick="ddAddSelectAll()">Select All</button>
+        <button class="btn btn-sm" onclick="ddAddClearSelection()">Clear</button>
+        <span class="picker-info" id="dd-add-picker-info">0 selected</span>
+      </div>
+      <div class="card-picker-grid" id="dd-add-picker-grid"></div>
+      <div style="margin-top:14px;text-align:right">
+        <button class="btn btn-primary btn-sm" onclick="addSelectedCardsToSet()">＋ Add Selected to Set</button>
+      </div>
+    </div>
+
+    <h2>Cards in this Set <span class="text-muted" id="dd-set-card-count"></span></h2>
+    <div class="dd-set-cards-list" id="dd-set-cards-list"></div>
+  </div>
+
+  <!-- ============================================================ SCREEN: DAILY DOSE SESSION SETUP ============================================================ -->
+  <div class="screen" id="screen-dailydose-setup">
+    <div style="max-width:520px;margin:0 auto">
+      <h1>Session Setup</h1>
+      <p class="subtitle" id="dd-setup-subtitle"></p>
+      <div class="setup-card">
+        <h2>How many cards?</h2>
+        <div class="dd-count-picker">
+          <input type="range" id="dd-count-slider" min="1" value="10" oninput="updateDDCountDisplay()">
+          <div class="dd-count-value" id="dd-count-display">10</div>
+        </div>
+        <p class="range-info" id="dd-count-info"></p>
+        <div class="setup-actions">
+          <button class="btn btn-sm" onclick="navigate('dailydose-edit')">← Back</button>
+          <button class="btn btn-primary" onclick="startDailyDoseSession()">▶ Begin</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ SCREEN: DAILY DOSE GAME ============================================================ -->
+  <div class="screen" id="screen-dailydose-game">
+    <div class="quiz-progress-bar-wrap"><div class="quiz-progress-bar" id="dd-progress-bar"></div></div>
+    <div class="quiz-meta">
+      <span id="dd-counter">1 / 10</span>
+      <span class="quiz-score-live">
+        <span style="color:var(--green);font-weight:bold" id="dd-live-green">🟢 0</span>
+        <span style="color:var(--gold-light);font-weight:bold" id="dd-live-orange">🟠 0</span>
+        <span style="color:var(--red);font-weight:bold" id="dd-live-red">🔴 0</span>
+      </span>
+    </div>
+    <div class="flashcard-large" id="dd-flashcard" onclick="revealDDCard()">
+      <div class="flashcard-front" id="dd-card-front"></div>
+      <div class="flashcard-back" id="dd-card-back">
+        <div class="flashcard-meaning" id="dd-card-meaning"></div>
+        <div class="flashcard-reading" id="dd-card-reading"></div>
+      </div>
+      <div class="flashcard-hint" id="dd-flip-hint">Tap to reveal</div>
+    </div>
+    <div class="dd-rate-row" id="dd-rate-row" style="display:none">
+      <button class="dd-rate-btn dd-rate-green" onclick="rateDDCard('green')"><span class="dd-rate-icon">🟢</span>I knew it</button>
+      <button class="dd-rate-btn dd-rate-orange" onclick="rateDDCard('orange')"><span class="dd-rate-icon">🟠</span>Got reminded</button>
+      <button class="dd-rate-btn dd-rate-red" onclick="rateDDCard('red')"><span class="dd-rate-icon">🔴</span>Didn't know</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ SCREEN: DAILY DOSE RESULTS ============================================================ -->
+  <div class="screen" id="screen-dailydose-results">
+    <div class="results-wrap">
+      <h1 style="margin-bottom:32px">Session Complete</h1>
+      <div class="results-big">
+        <span class="results-kanji-bg">習</span>
+        <div class="results-percent" id="dd-results-total"></div>
+        <div class="results-label">Cards Reviewed</div>
+        <div class="results-breakdown">
+          <div class="results-stat"><div class="results-stat-num" id="dd-stat-green" style="color:var(--green)"></div><div class="results-stat-label">Knew It</div></div>
+          <div class="results-stat"><div class="results-stat-num" id="dd-stat-orange" style="color:var(--gold-light)"></div><div class="results-stat-label">Reminded</div></div>
+          <div class="results-stat"><div class="results-stat-num" id="dd-stat-red" style="color:var(--red)"></div><div class="results-stat-label">Didn't Know</div></div>
+        </div>
+        <div class="results-message" id="dd-results-message"></div>
+      </div>
+      <div class="results-actions">
+        <button class="btn btn-primary" onclick="navigate('dailydose-setup')">↺ Another Round</button>
+        <button class="btn" onclick="navigate('dailydose-edit')">Edit Set</button>
+        <button class="btn" onclick="navigate('dailydose')">← All Sets</button>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /app -->
 
 <!-- ============================================================ MODALS ============================================================ -->
@@ -728,6 +888,40 @@
   </div>
 </div>
 
+<!-- New Daily Dose Set -->
+<div class="modal-overlay" id="modal-new-dailyset">
+  <div class="modal">
+    <h2>New Daily Dose Set</h2>
+    <div class="form-group">
+      <label>Set Name</label>
+      <input type="text" id="inp-dailyset-name" placeholder="e.g. Weak Kanji, N5 Review..." autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>Start with cards from (optional)</label>
+      <div class="dd-deck-checklist" id="dd-new-set-deck-list"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeModal('modal-new-dailyset')">Cancel</button>
+      <button class="btn btn-primary" onclick="createDailySet()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Daily Dose Set -->
+<div class="modal-overlay" id="modal-rename-dailyset">
+  <div class="modal">
+    <h2>Rename Set</h2>
+    <div class="form-group">
+      <label>New Name</label>
+      <input type="text" id="inp-rename-dailyset" placeholder="Set name" autocomplete="off" onkeydown="if(event.key==='Enter') renameDailySet()">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeModal('modal-rename-dailyset')">Cancel</button>
+      <button class="btn btn-primary" onclick="renameDailySet()">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* =====================================================================
    SUPABASE CONFIG
@@ -774,13 +968,30 @@ let state = {
   quiz: { cards: [], index: 0, correct: 0, wrong: 0, startIdx: 0, endIdx: 0, answered: false },
   memory: { cards: [], flipped: [], matched: [], moves: 0, pairsFound: 0 },
   marketDecks: [],
-  allMarketDecks: []
+  allMarketDecks: [],
+  // Daily Dose
+  dailyDoseSets: {},      // { setId: { name, cards: [{id,japanese,reading,meaning}] } }
+  dailyDoseHistory: {},   // { setId: { cardId: { green,orange,red,seenCount,lastRating,lastSeenAt } } }
+  currentDailySet: null,
+  ddAddSelectedIndices: new Set(),
+  ddSession: { cards: [], index: 0, green: 0, orange: 0, red: 0, flipped: false }
 };
 
 function save() { localStorage.setItem('jpquiz_decks', JSON.stringify(state.decks)); }
 function load() {
   try { const raw = localStorage.getItem('jpquiz_decks'); if (raw) state.decks = JSON.parse(raw); }
   catch(e) { state.decks = {}; }
+}
+
+function saveDailyDose() {
+  localStorage.setItem('jpquiz_dailydose_sets', JSON.stringify(state.dailyDoseSets));
+  localStorage.setItem('jpquiz_dailydose_history', JSON.stringify(state.dailyDoseHistory));
+}
+function loadDailyDose() {
+  try { const s = localStorage.getItem('jpquiz_dailydose_sets'); if (s) state.dailyDoseSets = JSON.parse(s); }
+  catch(e) { state.dailyDoseSets = {}; }
+  try { const h = localStorage.getItem('jpquiz_dailydose_history'); if (h) state.dailyDoseHistory = JSON.parse(h); }
+  catch(e) { state.dailyDoseHistory = {}; }
 }
 
 /* =====================================================================
@@ -796,11 +1007,16 @@ function navigate(screen) {
   if (screen === 'results') renderResults();
   if (screen === 'import')  renderImportScreen();
   if (screen === 'market')  renderMarket();
+  if (screen === 'dailydose')         renderDailyDoseHome();
+  if (screen === 'dailydose-edit')    renderDailyDoseEdit();
+  if (screen === 'dailydose-setup')   renderDailyDoseSetup();
+  if (screen === 'dailydose-results') renderDailyDoseResults();
 }
 
 function updateBreadcrumb(screen) {
   const bc = document.getElementById('breadcrumb');
   const deck = state.currentDeck ? state.decks[state.currentDeck] : null;
+  const dset = state.currentDailySet ? state.dailyDoseSets[state.currentDailySet] : null;
   let html = '';
   if (screen === 'home')    html = '<span>Decks</span>';
   else if (screen === 'deck')    html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>${deck ? esc(deck.name) : ''}</span>`;
@@ -809,6 +1025,11 @@ function updateBreadcrumb(screen) {
   else if (screen === 'results') html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Results</span>`;
   else if (screen === 'import')  html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Import</span>`;
   else if (screen === 'market')  html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Market</span>`;
+  else if (screen === 'dailydose')         html = '<span>Daily Dose</span>';
+  else if (screen === 'dailydose-edit')    html = `<a onclick="navigate('home')">Decks</a><span>›</span><a onclick="navigate('dailydose')">Daily Dose</a><span>›</span><span>${dset ? esc(dset.name) : ''}</span>`;
+  else if (screen === 'dailydose-setup')   html = `<a onclick="navigate('home')">Decks</a><span>›</span><a onclick="navigate('dailydose')">Daily Dose</a><span>›</span><a onclick="navigate('dailydose-edit')">${dset ? esc(dset.name) : ''}</a><span>›</span><span>Setup</span>`;
+  else if (screen === 'dailydose-game')    html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Daily Dose Session</span>`;
+  else if (screen === 'dailydose-results') html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Daily Dose Results</span>`;
   bc.innerHTML = html;
 }
 
@@ -1764,12 +1985,378 @@ function toggleQuizFont() {
   try { localStorage.setItem('jpquiz_standard_font', standard ? '1' : '0'); } catch(e) {}
 }
 
-try { applyQuizFont(localStorage.getItem('jpquiz_standard_font') === '1'); } catch(e) {}
+/* =====================================================================
+   DAILY DOSE — HOME / SET CRUD
+===================================================================== */
+function renderDailyDoseHome() {
+  const grid = document.getElementById('dailydose-set-grid');
+  const ids = Object.keys(state.dailyDoseSets);
+  if (ids.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-kanji">空</span><p>No Daily Dose sets yet.</p><p>Create one from your decks to start adaptive review.</p></div>`;
+    return;
+  }
+  const kanjiDeco = ['習','復','憶','練','覚','積','続','磨','鍛','育'];
+  grid.innerHTML = ids.map((id, i) => {
+    const s = state.dailyDoseSets[id];
+    const count = s.cards.length;
+    const hist = state.dailyDoseHistory[id] || {};
+    const seen = s.cards.filter(c => hist[c.id] && hist[c.id].seenCount > 0).length;
+    const k = kanjiDeco[i % kanjiDeco.length];
+    return `
+      <div class="deck-card" onclick="openDailySet('${id}')">
+        <div class="deck-card-kanji">${k}</div>
+        <div class="deck-card-name">${esc(s.name)}</div>
+        <div class="deck-card-meta">${count} card${count !== 1 ? 's' : ''} · ${seen}/${count} reviewed at least once</div>
+        <div class="deck-card-actions" onclick="event.stopPropagation()">
+          <button class="btn btn-sm" onclick="openDailySet('${id}')">Open</button>
+          <button class="btn btn-sm" onclick="openRenameDailySetModal('${id}')">Rename</button>
+          <button class="btn btn-sm btn-red" onclick="deleteDailySet('${id}')">Delete</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function openDailySet(id) { state.currentDailySet = id; navigate('dailydose-edit'); }
+
+function openNewDailySetModal() {
+  document.getElementById('inp-dailyset-name').value = '';
+  const list = document.getElementById('dd-new-set-deck-list');
+  const deckIds = Object.keys(state.decks);
+  if (deckIds.length === 0) {
+    list.innerHTML = `<div class="dd-empty-decks">You don't have any decks yet — create one first, or skip this and add cards later.</div>`;
+  } else {
+    list.innerHTML = deckIds.map(id => {
+      const d = state.decks[id];
+      return `<label class="dd-deck-check-row">
+        <input type="checkbox" value="${id}" class="dd-new-set-deck-checkbox">
+        <span class="dd-deck-check-name">${esc(d.name)}</span>
+        <span class="dd-deck-check-count">${d.cards.length} cards</span>
+      </label>`;
+    }).join('');
+  }
+  openModal('modal-new-dailyset');
+  setTimeout(() => document.getElementById('inp-dailyset-name').focus(), 80);
+}
+
+function createDailySet() {
+  const name = document.getElementById('inp-dailyset-name').value.trim();
+  if (!name) { notify('Please enter a set name.', true); return; }
+  const checked = [...document.querySelectorAll('.dd-new-set-deck-checkbox:checked')].map(cb => cb.value);
+  const cardMap = new Map();
+  checked.forEach(deckId => {
+    const d = state.decks[deckId];
+    if (!d) return;
+    d.cards.forEach(c => {
+      const id = ddCardId(c);
+      if (!cardMap.has(id)) cardMap.set(id, { id, japanese: c.japanese, reading: c.reading, meaning: c.meaning });
+    });
+  });
+  const id = 'dset_' + Date.now();
+  state.dailyDoseSets[id] = { name, cards: [...cardMap.values()] };
+  saveDailyDose(); closeModal('modal-new-dailyset'); notify(`Set "${name}" created!`);
+  openDailySet(id);
+}
+
+function openRenameDailySetModal(id) {
+  state._renamingDailySetId = id;
+  document.getElementById('inp-rename-dailyset').value = state.dailyDoseSets[id].name;
+  openModal('modal-rename-dailyset');
+  setTimeout(() => document.getElementById('inp-rename-dailyset').focus(), 80);
+}
+
+function renameDailySet() {
+  const name = document.getElementById('inp-rename-dailyset').value.trim();
+  if (!name) { notify('Please enter a name.', true); return; }
+  state.dailyDoseSets[state._renamingDailySetId].name = name;
+  saveDailyDose(); closeModal('modal-rename-dailyset'); notify('Set renamed.'); renderDailyDoseHome();
+}
+
+function deleteDailySet(id) {
+  const s = state.dailyDoseSets[id];
+  if (!confirm(`Delete set "${s.name}"? This does not delete your decks, only this set and its review history. This cannot be undone.`)) return;
+  delete state.dailyDoseSets[id];
+  delete state.dailyDoseHistory[id];
+  saveDailyDose(); notify('Set deleted.'); renderDailyDoseHome();
+}
+
+function ddCardId(c) { return simpleHash((c.japanese||'') + '|' + (c.reading||'') + '|' + (c.meaning||'')); }
+
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0; }
+  return 'c_' + Math.abs(hash).toString(36);
+}
+
+/* =====================================================================
+   DAILY DOSE — EDIT SET (ADD / REMOVE CARDS)
+===================================================================== */
+function renderDailyDoseEdit() {
+  if (!state.currentDailySet || !state.dailyDoseSets[state.currentDailySet]) { navigate('dailydose'); return; }
+  const set = state.dailyDoseSets[state.currentDailySet];
+  document.getElementById('dd-edit-title').textContent = set.name;
+  document.getElementById('dd-edit-subtitle').textContent = `${set.cards.length} card${set.cards.length !== 1 ? 's' : ''} in this set`;
+  document.getElementById('dd-start-btn').disabled = set.cards.length === 0;
+  document.getElementById('dd-set-card-count').textContent = `(${set.cards.length})`;
+
+  const sel = document.getElementById('dd-add-deck-select');
+  const deckIds = Object.keys(state.decks);
+  sel.innerHTML = deckIds.length === 0
+    ? '<option value="">No decks available</option>'
+    : deckIds.map(id => `<option value="${id}">${esc(state.decks[id].name)} (${state.decks[id].cards.length} cards)</option>`).join('');
+  state.ddAddSelectedIndices = new Set();
+  document.getElementById('dd-add-search').value = '';
+  renderDDAddPicker();
+  renderDDSetCardsList();
+}
+
+function renderDDSetCardsList() {
+  const set = state.dailyDoseSets[state.currentDailySet];
+  const container = document.getElementById('dd-set-cards-list');
+  if (set.cards.length === 0) {
+    container.innerHTML = `<div class="no-cards-msg">No cards in this set yet — add some from a deck above.</div>`;
+    return;
+  }
+  const hist = state.dailyDoseHistory[state.currentDailySet] || {};
+  container.innerHTML = set.cards.map(c => {
+    const h = hist[c.id];
+    const metaText = !h || h.seenCount === 0 ? 'never reviewed' : `🟢${h.green||0} 🟠${h.orange||0} 🔴${h.red||0}`;
+    return `<div class="dd-set-card-row">
+      <div class="dd-set-card-jp">${esc(c.japanese)}</div>
+      <div class="dd-set-card-meta">${esc(c.reading || '')}</div>
+      <div class="dd-set-card-meta">${esc(c.meaning)} · ${metaText}</div>
+      <button class="btn btn-sm btn-red btn-icon" onclick="removeCardFromSet('${c.id}')" title="Remove from set">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function removeCardFromSet(cardId) {
+  const set = state.dailyDoseSets[state.currentDailySet];
+  set.cards = set.cards.filter(c => c.id !== cardId);
+  saveDailyDose(); renderDailyDoseEdit(); notify('Card removed from set.');
+}
+
+function renderDDAddPicker() {
+  const grid = document.getElementById('dd-add-picker-grid');
+  const deckId = document.getElementById('dd-add-deck-select').value;
+  const deck = state.decks[deckId];
+  if (!deck) { grid.innerHTML = `<div class="card-picker-empty">No deck selected.</div>`; updateDDAddPickerInfo(); return; }
+  const searchVal = (document.getElementById('dd-add-search').value || '').toLowerCase();
+  const set = state.dailyDoseSets[state.currentDailySet];
+  const existingIds = new Set(set.cards.map(c => c.id));
+  if (deck.cards.length === 0) { grid.innerHTML = `<div class="card-picker-empty">This deck has no cards.</div>`; updateDDAddPickerInfo(); return; }
+  grid.innerHTML = deck.cards.map((c, i) => {
+    const isSelected = state.ddAddSelectedIndices.has(i);
+    const alreadyInSet = existingIds.has(ddCardId(c));
+    const matchesSearch = !searchVal || c.japanese.toLowerCase().includes(searchVal) || c.meaning.toLowerCase().includes(searchVal) || (c.reading && c.reading.toLowerCase().includes(searchVal));
+    return `<div class="picker-card${isSelected ? ' selected' : ''}${!matchesSearch ? ' hidden-by-search' : ''}" data-index="${i}" onclick="${alreadyInSet ? '' : `toggleDDAddCard(${i})`}" style="${alreadyInSet ? 'opacity:0.4;cursor:default' : ''}">
+      <span class="picker-card-num">${i+1}</span>
+      <span class="picker-card-check">✓</span>
+      <div class="picker-card-japanese">${esc(c.japanese)}</div>
+      <div class="picker-card-reading">${esc(c.reading || '')}</div>
+      <div class="picker-card-meaning">${esc(c.meaning)}${alreadyInSet ? ' (in set)' : ''}</div>
+    </div>`;
+  }).join('');
+  updateDDAddPickerInfo();
+}
+
+function toggleDDAddCard(index) {
+  if (state.ddAddSelectedIndices.has(index)) state.ddAddSelectedIndices.delete(index);
+  else state.ddAddSelectedIndices.add(index);
+  renderDDAddPicker();
+}
+
+function ddAddSelectAll() {
+  const deckId = document.getElementById('dd-add-deck-select').value;
+  const deck = state.decks[deckId];
+  if (!deck) return;
+  const set = state.dailyDoseSets[state.currentDailySet];
+  const existingIds = new Set(set.cards.map(c => c.id));
+  const searchVal = (document.getElementById('dd-add-search').value || '').toLowerCase();
+  deck.cards.forEach((c, i) => {
+    const alreadyInSet = existingIds.has(ddCardId(c));
+    const matchesSearch = !searchVal || c.japanese.toLowerCase().includes(searchVal) || c.meaning.toLowerCase().includes(searchVal) || (c.reading && c.reading.toLowerCase().includes(searchVal));
+    if (!alreadyInSet && matchesSearch) state.ddAddSelectedIndices.add(i);
+  });
+  renderDDAddPicker();
+}
+
+function ddAddClearSelection() { state.ddAddSelectedIndices.clear(); renderDDAddPicker(); }
+
+function updateDDAddPickerInfo() {
+  document.getElementById('dd-add-picker-info').textContent = `${state.ddAddSelectedIndices.size} selected`;
+}
+
+function addSelectedCardsToSet() {
+  const deckId = document.getElementById('dd-add-deck-select').value;
+  const deck = state.decks[deckId];
+  if (!deck || state.ddAddSelectedIndices.size === 0) { notify('Select at least one card to add.', true); return; }
+  const set = state.dailyDoseSets[state.currentDailySet];
+  const existingIds = new Set(set.cards.map(c => c.id));
+  let added = 0;
+  [...state.ddAddSelectedIndices].forEach(i => {
+    const c = deck.cards[i];
+    if (!c) return;
+    const id = ddCardId(c);
+    if (!existingIds.has(id)) { set.cards.push({ id, japanese: c.japanese, reading: c.reading, meaning: c.meaning }); existingIds.add(id); added++; }
+  });
+  saveDailyDose(); state.ddAddSelectedIndices.clear();
+  renderDailyDoseEdit(); notify(`Added ${added} card${added !== 1 ? 's' : ''} to the set.`);
+}
+
+/* =====================================================================
+   DAILY DOSE — SESSION SETUP
+===================================================================== */
+function renderDailyDoseSetup() {
+  const set = state.dailyDoseSets[state.currentDailySet];
+  const total = set.cards.length;
+  document.getElementById('dd-setup-subtitle').textContent = `${set.name} — ${total} card${total !== 1 ? 's' : ''} in the set`;
+  const slider = document.getElementById('dd-count-slider');
+  slider.max = total;
+  slider.value = Math.min(10, total);
+  updateDDCountDisplay();
+}
+
+function updateDDCountDisplay() {
+  const slider = document.getElementById('dd-count-slider');
+  document.getElementById('dd-count-display').textContent = slider.value;
+  const set = state.dailyDoseSets[state.currentDailySet];
+  document.getElementById('dd-count-info').textContent = `Reviewing ${slider.value} of ${set.cards.length} cards — the algorithm picks which ones.`;
+}
+
+/* =====================================================================
+   DAILY DOSE — ALGORITHM
+===================================================================== */
+function weightedSampleWithoutReplacement(weighted, count) {
+  const pool = weighted.map(w => ({ ...w }));
+  const result = [];
+  while (result.length < count && pool.length > 0) {
+    const totalWeight = pool.reduce((sum, p) => sum + p.weight, 0);
+    let r = Math.random() * totalWeight;
+    let idx = 0;
+    for (; idx < pool.length; idx++) { r -= pool[idx].weight; if (r <= 0) break; }
+    idx = Math.min(idx, pool.length - 1);
+    result.push(pool[idx].card);
+    pool.splice(idx, 1);
+  }
+  return result;
+}
+
+function buildDailyDoseSession(setId, count) {
+  const set = state.dailyDoseSets[setId];
+  const history = state.dailyDoseHistory[setId] || {};
+  const unseen = [];
+  const seen = [];
+  set.cards.forEach(c => {
+    const h = history[c.id];
+    if (!h || !h.seenCount) unseen.push(c);
+    else seen.push({ card: c, h });
+  });
+  const shuffledUnseen = [...unseen].sort(() => Math.random() - 0.5);
+  let selected = shuffledUnseen.slice(0, count);
+  if (selected.length < count && seen.length > 0) {
+    const remaining = count - selected.length;
+    const weighted = seen.map(s => {
+      const weakness = (s.h.red || 0) * 3 + (s.h.orange || 0) * 1;
+      const weight = Math.max(0.6, weakness - (s.h.green || 0) * 0.4 + 1);
+      return { card: s.card, weight };
+    });
+    selected = selected.concat(weightedSampleWithoutReplacement(weighted, remaining));
+  }
+  return [...selected].sort(() => Math.random() - 0.5);
+}
+
+function startDailyDoseSession() {
+  const count = parseInt(document.getElementById('dd-count-slider').value) || 1;
+  const cards = buildDailyDoseSession(state.currentDailySet, count);
+  if (cards.length === 0) { notify('No cards available to review.', true); return; }
+  state.ddSession = { cards, index: 0, green: 0, orange: 0, red: 0, flipped: false };
+  navigate('dailydose-game');
+  renderDDCard();
+}
+
+/* =====================================================================
+   DAILY DOSE — GAME
+===================================================================== */
+function renderDDCard() {
+  const sess = state.ddSession;
+  const card = sess.cards[sess.index];
+  document.getElementById('dd-progress-bar').style.width = (sess.index / sess.cards.length * 100) + '%';
+  document.getElementById('dd-counter').textContent = `${sess.index + 1} / ${sess.cards.length}`;
+  document.getElementById('dd-live-green').textContent  = `🟢 ${sess.green}`;
+  document.getElementById('dd-live-orange').textContent = `🟠 ${sess.orange}`;
+  document.getElementById('dd-live-red').textContent    = `🔴 ${sess.red}`;
+  sess.flipped = false;
+  const fc = document.getElementById('dd-flashcard');
+  fc.classList.remove('revealed');
+  fc.onclick = revealDDCard;
+  document.getElementById('dd-card-front').textContent = card.japanese;
+  document.getElementById('dd-card-meaning').textContent = card.meaning;
+  document.getElementById('dd-card-reading').textContent = card.reading || '';
+  document.getElementById('dd-flip-hint').style.display = 'block';
+  document.getElementById('dd-flip-hint').textContent = 'Tap to reveal';
+  document.getElementById('dd-rate-row').style.display = 'none';
+  ttsSpeak(card.japanese);
+}
+
+function revealDDCard() {
+  const sess = state.ddSession;
+  if (sess.flipped) return;
+  sess.flipped = true;
+  const fc = document.getElementById('dd-flashcard');
+  fc.classList.add('revealed'); fc.onclick = null;
+  document.getElementById('dd-flip-hint').style.display = 'none';
+  document.getElementById('dd-rate-row').style.display = 'grid';
+  const card = sess.cards[sess.index];
+  ttsSpeak(card.reading || card.japanese);
+}
+
+function rateDDCard(color) {
+  const sess = state.ddSession;
+  const card = sess.cards[sess.index];
+  const setId = state.currentDailySet;
+  if (!state.dailyDoseHistory[setId]) state.dailyDoseHistory[setId] = {};
+  const hist = state.dailyDoseHistory[setId];
+  if (!hist[card.id]) hist[card.id] = { green: 0, orange: 0, red: 0, seenCount: 0, lastRating: null, lastSeenAt: 0 };
+  hist[card.id][color]++;
+  hist[card.id].seenCount++;
+  hist[card.id].lastRating = color;
+  hist[card.id].lastSeenAt = Date.now();
+  sess[color]++;
+  saveDailyDose();
+
+  document.getElementById('dd-live-green').textContent  = `🟢 ${sess.green}`;
+  document.getElementById('dd-live-orange').textContent = `🟠 ${sess.orange}`;
+  document.getElementById('dd-live-red').textContent    = `🔴 ${sess.red}`;
+
+  sess.index++;
+  if (sess.index >= sess.cards.length) { navigate('dailydose-results'); return; }
+  renderDDCard();
+}
+
+/* =====================================================================
+   DAILY DOSE — RESULTS
+===================================================================== */
+function renderDailyDoseResults() {
+  const sess = state.ddSession;
+  const total = sess.cards.length;
+  const bar = document.getElementById('dd-progress-bar');
+  if (bar) bar.style.width = '100%';
+  document.getElementById('dd-results-total').textContent = total;
+  document.getElementById('dd-stat-green').textContent  = sess.green;
+  document.getElementById('dd-stat-orange').textContent = sess.orange;
+  document.getElementById('dd-stat-red').textContent    = sess.red;
+  let msg = 'Keep at it — little and often wins.';
+  if (sess.red === 0 && sess.orange === 0) msg = '完璧！Knew every card!';
+  else if (sess.red === 0) msg = 'Solid round — nothing you fully forgot.';
+  document.getElementById('dd-results-message').textContent = msg;
+}
 
 /* =====================================================================
    INIT
 ===================================================================== */
 load();
+loadDailyDose();
+try { applyQuizFont(localStorage.getItem('jpquiz_standard_font') === '1'); } catch(e) {}
 navigate('home');
 </script>
 </body>
