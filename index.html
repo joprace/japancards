@@ -403,7 +403,8 @@
   @keyframes notifIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
   /* ===================== QUIZ FONT TOGGLE ===================== */
-  #screen-quiz.standard-font *:not(#font-toggle-btn) {
+  #screen-quiz.standard-font *:not(#font-toggle-btn),
+  #screen-dailydose-game.standard-font *:not(#dd-font-toggle-btn) {
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif !important;
   }
 
@@ -788,6 +789,9 @@
 
   <!-- ============================================================ SCREEN: DAILY DOSE GAME ============================================================ -->
   <div class="screen" id="screen-dailydose-game">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+      <button class="btn btn-sm" id="dd-font-toggle-btn" onclick="toggleQuizFont()" title="Switch between the original and standard font">Aa Font: Original</button>
+    </div>
     <div class="quiz-progress-bar-wrap"><div class="quiz-progress-bar" id="dd-progress-bar"></div></div>
     <div class="quiz-meta">
       <span id="dd-counter">1 / 10</span>
@@ -1976,15 +1980,21 @@ function doImport() {
 /* =====================================================================
    QUIZ FONT TOGGLE
 ===================================================================== */
+let quizFontStandard = false;
+
 function applyQuizFont(standard) {
-  document.getElementById('screen-quiz').classList.toggle('standard-font', standard);
-  const btn = document.getElementById('font-toggle-btn');
-  btn.classList.toggle('btn-primary', standard);
-  btn.textContent = standard ? 'Aa Font: Standard' : 'Aa Font: Original';
+  quizFontStandard = standard;
+  const label = standard ? 'Aa Font: Standard' : 'Aa Font: Original';
+  [['screen-quiz', 'font-toggle-btn'], ['screen-dailydose-game', 'dd-font-toggle-btn']].forEach(([screenId, btnId]) => {
+    const screen = document.getElementById(screenId);
+    const btn = document.getElementById(btnId);
+    if (screen) screen.classList.toggle('standard-font', standard);
+    if (btn) { btn.classList.toggle('btn-primary', standard); btn.textContent = label; }
+  });
 }
 
 function toggleQuizFont() {
-  const standard = !document.getElementById('screen-quiz').classList.contains('standard-font');
+  const standard = !quizFontStandard;
   applyQuizFont(standard);
   try { localStorage.setItem('jpquiz_standard_font', standard ? '1' : '0'); } catch(e) {}
 }
