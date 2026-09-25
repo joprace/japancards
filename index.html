@@ -971,7 +971,8 @@ let state = {
   allMarketDecks: [],
   // Daily Dose
   dailyDoseSets: {},      // { setId: { name, cards: [{id,japanese,reading,meaning}] } }
-  dailyDoseHistory: {},   // { setId: { cardId: { green,orange,red,seenCount,lastRating,lastSeenAt } } }
+  dailyDoseHistory: {},   // { setId: { cardId: { green,orange,red,seenCount,lastRating,lastSeenAt,lastSeenSession } } }
+  dailyDoseMeta: {},      // { setId: { sessionCount } } — how many Daily Dose sessions this set has run, so we can tell "how many doses ago" a card last appeared
   currentDailySet: null,
   ddAddSelectedIndices: new Set(),
   ddSession: { cards: [], index: 0, green: 0, orange: 0, red: 0, flipped: false }
@@ -986,12 +987,15 @@ function load() {
 function saveDailyDose() {
   localStorage.setItem('jpquiz_dailydose_sets', JSON.stringify(state.dailyDoseSets));
   localStorage.setItem('jpquiz_dailydose_history', JSON.stringify(state.dailyDoseHistory));
+  localStorage.setItem('jpquiz_dailydose_meta', JSON.stringify(state.dailyDoseMeta));
 }
 function loadDailyDose() {
   try { const s = localStorage.getItem('jpquiz_dailydose_sets'); if (s) state.dailyDoseSets = JSON.parse(s); }
   catch(e) { state.dailyDoseSets = {}; }
   try { const h = localStorage.getItem('jpquiz_dailydose_history'); if (h) state.dailyDoseHistory = JSON.parse(h); }
   catch(e) { state.dailyDoseHistory = {}; }
+  try { const m = localStorage.getItem('jpquiz_dailydose_meta'); if (m) state.dailyDoseMeta = JSON.parse(m); }
+  catch(e) { state.dailyDoseMeta = {}; }
 }
 
 /* =====================================================================
@@ -2241,7 +2245,7 @@ function weightedSampleWithoutReplacement(weighted, count) {
   return result;
 }
 
-function buildDailyDoseSession(setId, count) {
+function buildDailyDoseSession(setId, count, sessionNumber) {
   const set = state.dailyDoseSets[setId];
   const history = state.dailyDoseHistory[setId] || {};
   const unseen = [];
@@ -2257,7 +2261,12 @@ function buildDailyDoseSession(setId, count) {
     const remaining = count - selected.length;
     const weighted = seen.map(s => {
       const weakness = (s.h.red || 0) * 3 + (s.h.orange || 0) * 1;
-      const weight = Math.max(0.6, weakness - (s.h.green || 0) * 0.4 + 1);
+      // How many Daily Dose sessions ago this card last appeared (missing = treat as long overdue).
+      const dosesAgo = Math.max(0, sessionNumber - (s.h.lastSeenSession || 0));
+      const base = Math.max(0.6, weakness - (s.h.green || 0) * 0.4 + 1);
+      // Weight grows the longer a card has gone unseen, with no ceiling — so even an all-green
+      // card is guaranteed to keep resurfacing eventually instead of vanishing from rotation.
+      const weight = base + dosesAgo * 0.6;
       return { card: s.card, weight };
     });
     selected = selected.concat(weightedSampleWithoutReplacement(weighted, remaining));
@@ -2267,9 +2276,13 @@ function buildDailyDoseSession(setId, count) {
 
 function startDailyDoseSession() {
   const count = parseInt(document.getElementById('dd-count-slider').value) || 1;
-  const cards = buildDailyDoseSession(state.currentDailySet, count);
-  if (cards.length === 0) { notify('No cards available to review.', true); return; }
-  state.ddSession = { cards, index: 0, green: 0, orange: 0, red: 0, flipped: false };
+  const setId = state.currentDailySet;
+  if (!state.dailyDoseMeta[setId]) state.dailyDoseMeta[setId] = { sessionCount: 0 };
+  const sessionNumber = ++state.dailyDoseMeta[setId].sessionCount;
+  const cards = buildDailyDoseSession(setId, count, sessionNumber);
+  if (cards.length === 0) { notify('No cards available to review.', true); state.dailyDoseMeta[setId].sessionCount--; return; }
+  saveDailyDose();
+  state.ddSession = { cards, index: 0, green: 0, orange: 0, red: 0, flipped: false, sessionNumber };
   navigate('dailydose-game');
   renderDDCard();
 }
@@ -2316,11 +2329,12 @@ function rateDDCard(color) {
   const setId = state.currentDailySet;
   if (!state.dailyDoseHistory[setId]) state.dailyDoseHistory[setId] = {};
   const hist = state.dailyDoseHistory[setId];
-  if (!hist[card.id]) hist[card.id] = { green: 0, orange: 0, red: 0, seenCount: 0, lastRating: null, lastSeenAt: 0 };
+  if (!hist[card.id]) hist[card.id] = { green: 0, orange: 0, red: 0, seenCount: 0, lastRating: null, lastSeenAt: 0, lastSeenSession: 0 };
   hist[card.id][color]++;
   hist[card.id].seenCount++;
   hist[card.id].lastRating = color;
   hist[card.id].lastSeenAt = Date.now();
+  hist[card.id].lastSeenSession = sess.sessionNumber;
   sess[color]++;
   saveDailyDose();
 
