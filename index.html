@@ -133,7 +133,7 @@
   /* ===================== FORM ELEMENTS ===================== */
   .form-group { margin-bottom: 16px; }
   label { display: block; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-  input[type="text"], input[type="number"] {
+  input[type="text"], input[type="number"], input[type="password"] {
     width: 100%; padding: 10px 12px; border: 2px solid var(--border);
     background: var(--card-bg); font-family: 'DM Mono', monospace; font-size: 0.9rem;
     color: var(--ink); border-radius: var(--radius); transition: var(--trans); outline: none;
@@ -464,6 +464,11 @@
     <span class="logo-text">Japanese Flashcard Quiz</span>
     <a class="nav-link" onclick="navigate('market')" style="cursor:pointer;margin-left:auto;margin-right:20px;font-size:0.75rem;color:var(--ink);text-decoration:none;letter-spacing:0.1em;padding:4px 8px;border-bottom:2px solid transparent;transition:var(--trans);" onmouseover="this.style.color='var(--red)';this.style.borderBottomColor='var(--red)'" onmouseout="this.style.color='var(--ink)';this.style.borderBottomColor='transparent'">市場 MARKET</a>
     <a class="nav-link" onclick="navigate('dailydose')" style="cursor:pointer;margin-right:20px;font-size:0.75rem;color:var(--ink);text-decoration:none;letter-spacing:0.1em;padding:4px 8px;border-bottom:2px solid transparent;transition:var(--trans);" onmouseover="this.style.color='var(--red)';this.style.borderBottomColor='var(--red)'" onmouseout="this.style.color='var(--ink)';this.style.borderBottomColor='transparent'">常用 DAILY DOSE</a>
+    <a class="nav-link" onclick="navigate('leaderboard')" style="cursor:pointer;margin-right:20px;font-size:0.75rem;color:var(--ink);text-decoration:none;letter-spacing:0.1em;padding:4px 8px;border-bottom:2px solid transparent;transition:var(--trans);" onmouseover="this.style.color='var(--red)';this.style.borderBottomColor='var(--red)'" onmouseout="this.style.color='var(--ink)';this.style.borderBottomColor='transparent'">🏆 RANKINGS</a>
+    <div id="auth-area" style="display:flex;align-items:center;gap:8px;margin-right:16px;">
+      <span id="auth-status" style="font-size:0.72rem;color:var(--muted);letter-spacing:0.05em;white-space:nowrap;">👤 Guest</span>
+      <button class="btn btn-sm" id="auth-action-btn" onclick="handleAuthButtonClick()">Log In</button>
+    </div>
     <button id="tts-toggle-btn" onclick="toggleTTS()" title="Toggle voice reading" style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:2px solid var(--ink);background:var(--ink);color:var(--paper);font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.08em;cursor:pointer;border-radius:var(--radius);transition:var(--trans);text-transform:uppercase;white-space:nowrap;margin-right:16px;">🔊 Voice On</button>
     <nav class="breadcrumb" id="breadcrumb"></nav>
   </header>
@@ -839,6 +844,25 @@
     </div>
   </div>
 
+  <!-- ============================================================ SCREEN: LEADERBOARD ============================================================ -->
+  <div class="screen" id="screen-leaderboard">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;gap:16px;flex-wrap:wrap">
+      <div><h1>🏆 Rankings</h1><p class="subtitle">Correct answers from quizzes and Daily Dose sessions — accounts only</p></div>
+      <button class="btn btn-sm" onclick="navigate('home')">← Back</button>
+    </div>
+    <div id="leaderboard-loading" style="text-align:center;padding:40px;color:var(--muted);font-size:0.85rem;display:none">
+      <div style="font-family:'Zen Old Mincho',serif;font-size:3rem;opacity:0.2;margin-bottom:12px">読</div>
+      Loading rankings...
+    </div>
+    <div class="card-table-wrap" id="leaderboard-table-wrap" style="display:none">
+      <table>
+        <thead><tr><th class="th-num">#</th><th>Player</th><th>Correct</th><th>Reviewed</th></tr></thead>
+        <tbody id="leaderboard-tbody"></tbody>
+      </table>
+    </div>
+    <div id="leaderboard-empty" style="display:none" class="empty-state"><span class="empty-kanji">空</span><p>No rankings yet.</p><p>Log in and start reviewing to appear here.</p></div>
+  </div>
+
 </div><!-- /app -->
 
 <!-- ============================================================ MODALS ============================================================ -->
@@ -926,6 +950,37 @@
   </div>
 </div>
 
+<!-- Login / Sign Up -->
+<div class="modal-overlay" id="modal-auth">
+  <div class="modal">
+    <h2 id="auth-modal-title">Log In</h2>
+    <div class="selection-mode-toggle" style="margin-bottom:20px">
+      <button class="selection-mode-btn active" id="auth-tab-login" onclick="switchAuthTab('login')">Log In</button>
+      <button class="selection-mode-btn" id="auth-tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
+    </div>
+    <div class="form-group" id="auth-name-group" style="display:none">
+      <label>Display Name</label>
+      <input type="text" id="auth-name" placeholder="Shown on the leaderboard" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="text" id="auth-email" placeholder="you@example.com" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="auth-password" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter') submitAuthForm()">
+    </div>
+    <p id="auth-error" style="display:none;color:var(--red);font-size:0.78rem;margin-bottom:12px"></p>
+    <button class="btn btn-primary" id="auth-submit-btn" style="width:100%;justify-content:center;margin-bottom:14px" onclick="submitAuthForm()">Log In</button>
+    <div class="import-divider">— or —</div>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:14px" onclick="signInWithGoogle()">Continue with Google</button>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeModal('modal-auth')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* =====================================================================
    SUPABASE CONFIG
@@ -955,6 +1010,12 @@ async function dbInsertDeck(name, authorName, cards) { return await sbFetch('mar
 async function dbIncrementDownloads(id, currentDownloads) { return await sbFetch(`market_decks?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ downloads: currentDownloads + 1 }) }); }
 function isSupabaseConfigured() { return SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY_HERE'; }
 
+/* Auth-capable client (for account system + leaderboard). Falls back to null if the library
+   didn't load (e.g. offline) — account features are then disabled but guest mode still works. */
+const sbClient = (isSupabaseConfigured() && window.supabase && typeof window.supabase.createClient === 'function')
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
 /* =====================================================================
    STATE & PERSISTENCE
 ===================================================================== */
@@ -979,20 +1040,41 @@ let state = {
   dailyDoseMeta: {},      // { setId: { sessionCount } } — how many Daily Dose sessions this set has run, so we can tell "how many doses ago" a card last appeared
   currentDailySet: null,
   ddAddSelectedIndices: new Set(),
-  ddSession: { cards: [], index: 0, green: 0, orange: 0, red: 0, flipped: false }
+  ddSession: { cards: [], index: 0, green: 0, orange: 0, red: 0, flipped: false },
+  // Account system
+  session: null,            // current Supabase auth session, or null = guest mode
+  syncedForUserId: null,    // guards against re-syncing on token-refresh events
+  profileName: null,
+  authTab: 'login',
+  stats: { totalCorrect: 0, totalReviewed: 0 }
 };
 
-function save() { localStorage.setItem('jpquiz_decks', JSON.stringify(state.decks)); }
+/* Always writes a local cache (this is what guest mode runs on). When an account is signed in,
+   also pushes the same data to the cloud so it's available on any device. */
+function persistUserData() {
+  localStorage.setItem('jpquiz_decks', JSON.stringify(state.decks));
+  localStorage.setItem('jpquiz_dailydose_sets', JSON.stringify(state.dailyDoseSets));
+  localStorage.setItem('jpquiz_dailydose_history', JSON.stringify(state.dailyDoseHistory));
+  localStorage.setItem('jpquiz_dailydose_meta', JSON.stringify(state.dailyDoseMeta));
+  if (sbClient && state.session) {
+    sbClient.from('user_data').upsert({
+      id: state.session.user.id,
+      decks: state.decks,
+      dailydose_sets: state.dailyDoseSets,
+      dailydose_history: state.dailyDoseHistory,
+      dailydose_meta: state.dailyDoseMeta,
+      updated_at: new Date().toISOString()
+    }).then(({ error }) => { if (error) notify('Cloud save failed: ' + error.message, true); });
+  }
+}
+
+function save() { persistUserData(); }
 function load() {
   try { const raw = localStorage.getItem('jpquiz_decks'); if (raw) state.decks = JSON.parse(raw); }
   catch(e) { state.decks = {}; }
 }
 
-function saveDailyDose() {
-  localStorage.setItem('jpquiz_dailydose_sets', JSON.stringify(state.dailyDoseSets));
-  localStorage.setItem('jpquiz_dailydose_history', JSON.stringify(state.dailyDoseHistory));
-  localStorage.setItem('jpquiz_dailydose_meta', JSON.stringify(state.dailyDoseMeta));
-}
+function saveDailyDose() { persistUserData(); }
 function loadDailyDose() {
   try { const s = localStorage.getItem('jpquiz_dailydose_sets'); if (s) state.dailyDoseSets = JSON.parse(s); }
   catch(e) { state.dailyDoseSets = {}; }
@@ -1000,6 +1082,30 @@ function loadDailyDose() {
   catch(e) { state.dailyDoseHistory = {}; }
   try { const m = localStorage.getItem('jpquiz_dailydose_meta'); if (m) state.dailyDoseMeta = JSON.parse(m); }
   catch(e) { state.dailyDoseMeta = {}; }
+}
+
+/* Local + cloud persistence for leaderboard stats (guests keep stats locally but don't appear
+   on the public leaderboard, since that requires an account). */
+function persistStats() {
+  localStorage.setItem('jpquiz_stats', JSON.stringify(state.stats));
+  if (sbClient && state.session) {
+    sbClient.from('leaderboard_stats').upsert({
+      id: state.session.user.id,
+      display_name: state.profileName || (state.session.user.email || 'Anonymous').split('@')[0],
+      total_correct: state.stats.totalCorrect,
+      total_reviewed: state.stats.totalReviewed,
+      updated_at: new Date().toISOString()
+    }).then(({ error }) => { if (error) console.error(error); });
+  }
+}
+function loadStats() {
+  try { const s = localStorage.getItem('jpquiz_stats'); if (s) state.stats = JSON.parse(s); }
+  catch(e) { state.stats = { totalCorrect: 0, totalReviewed: 0 }; }
+}
+function bumpStats(correct) {
+  state.stats.totalReviewed++;
+  if (correct) state.stats.totalCorrect++;
+  persistStats();
 }
 
 /* =====================================================================
@@ -1019,6 +1125,7 @@ function navigate(screen) {
   if (screen === 'dailydose-edit')    renderDailyDoseEdit();
   if (screen === 'dailydose-setup')   renderDailyDoseSetup();
   if (screen === 'dailydose-results') renderDailyDoseResults();
+  if (screen === 'leaderboard') renderLeaderboard();
 }
 
 function updateBreadcrumb(screen) {
@@ -1038,6 +1145,7 @@ function updateBreadcrumb(screen) {
   else if (screen === 'dailydose-setup')   html = `<a onclick="navigate('home')">Decks</a><span>›</span><a onclick="navigate('dailydose')">Daily Dose</a><span>›</span><a onclick="navigate('dailydose-edit')">${dset ? esc(dset.name) : ''}</a><span>›</span><span>Setup</span>`;
   else if (screen === 'dailydose-game')    html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Daily Dose Session</span>`;
   else if (screen === 'dailydose-results') html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Daily Dose Results</span>`;
+  else if (screen === 'leaderboard') html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Rankings</span>`;
   bc.innerHTML = html;
 }
 
@@ -1494,6 +1602,7 @@ function checkTypingAnswer(card) {
   q.answered = true; input.disabled = true;
   if (isCorrect) { q.correct++; input.style.borderColor = 'var(--green)'; input.style.background = 'var(--green)'; input.style.color = 'white'; }
   else           { q.wrong++;   input.style.borderColor = 'var(--red)';   input.style.background = 'var(--red)';   input.style.color = 'white'; }
+  bumpStats(isCorrect);
   document.getElementById('live-correct').textContent = `✓ ${q.correct}`;
   document.getElementById('live-wrong').textContent   = `✗ ${q.wrong}`;
   const fb = document.getElementById('typing-feedback');
@@ -1572,6 +1681,7 @@ function selectAnswer(btn, chosen, correct) {
   const isCorrect = chosen === correct;
   const card = q.cards[q.index];
   if (isCorrect) q.correct++; else q.wrong++;
+  bumpStats(isCorrect);
   document.getElementById('live-correct').textContent = `✓ ${q.correct}`;
   document.getElementById('live-wrong').textContent   = `✗ ${q.wrong}`;
   document.querySelectorAll('.option-btn').forEach(b => { b.disabled = true; if (b.dataset.meaning === correct) b.classList.add('correct-ans'); });
@@ -2347,6 +2457,7 @@ function rateDDCard(color) {
   hist[card.id].lastSeenSession = sess.sessionNumber;
   sess[color]++;
   saveDailyDose();
+  bumpStats(color === 'green');
 
   document.getElementById('dd-live-green').textContent  = `🟢 ${sess.green}`;
   document.getElementById('dd-live-orange').textContent = `🟠 ${sess.orange}`;
@@ -2376,11 +2487,183 @@ function renderDailyDoseResults() {
 }
 
 /* =====================================================================
+   ACCOUNT SYSTEM — AUTH UI
+===================================================================== */
+function updateAuthUI() {
+  const statusEl = document.getElementById('auth-status');
+  const btn = document.getElementById('auth-action-btn');
+  if (!statusEl || !btn) return;
+  if (state.session) {
+    const name = state.profileName || state.session.user.email;
+    statusEl.textContent = `👤 ${name}`;
+    btn.textContent = 'Log Out';
+    btn.onclick = signOutAccount;
+  } else {
+    statusEl.textContent = '👤 Guest';
+    btn.textContent = 'Log In';
+    btn.onclick = handleAuthButtonClick;
+  }
+}
+
+function handleAuthButtonClick() { openAuthModal(); }
+
+function openAuthModal() {
+  if (!sbClient) { notify('Account features are unavailable right now.', true); return; }
+  document.getElementById('auth-email').value = '';
+  document.getElementById('auth-password').value = '';
+  document.getElementById('auth-name').value = '';
+  document.getElementById('auth-error').style.display = 'none';
+  switchAuthTab('login');
+  openModal('modal-auth');
+  setTimeout(() => document.getElementById('auth-email').focus(), 80);
+}
+
+function switchAuthTab(tab) {
+  state.authTab = tab;
+  document.getElementById('auth-tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('auth-tab-signup').classList.toggle('active', tab === 'signup');
+  document.getElementById('auth-modal-title').textContent = tab === 'login' ? 'Log In' : 'Sign Up';
+  document.getElementById('auth-name-group').style.display = tab === 'signup' ? 'block' : 'none';
+  document.getElementById('auth-submit-btn').textContent = tab === 'login' ? 'Log In' : 'Sign Up';
+  document.getElementById('auth-error').style.display = 'none';
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+async function submitAuthForm() {
+  if (!sbClient) { notify('Account features are unavailable right now.', true); return; }
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const name = document.getElementById('auth-name').value.trim();
+  if (!email || !password) { showAuthError('Email and password are required.'); return; }
+  const btn = document.getElementById('auth-submit-btn');
+  btn.disabled = true;
+  try {
+    if (state.authTab === 'signup') {
+      const { data, error } = await sbClient.auth.signUp({ email, password });
+      if (error) { showAuthError(error.message); return; }
+      if (name && data.user) {
+        try { await sbClient.from('profiles').upsert({ id: data.user.id, display_name: name }); } catch(e) {}
+      }
+      if (!data.session) {
+        notify('Check your email to confirm your account, then log in.');
+        closeModal('modal-auth');
+        return;
+      }
+    } else {
+      const { error } = await sbClient.auth.signInWithPassword({ email, password });
+      if (error) { showAuthError(error.message); return; }
+    }
+    closeModal('modal-auth');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function signInWithGoogle() {
+  if (!sbClient) { notify('Account features are unavailable right now.', true); return; }
+  await sbClient.auth.signInWithOAuth({ provider: 'google' });
+}
+
+async function signOutAccount() {
+  if (!sbClient) return;
+  await sbClient.auth.signOut();
+  notify('Logged out — back to guest mode.');
+}
+
+/* =====================================================================
+   ACCOUNT SYSTEM — SESSION SYNC
+===================================================================== */
+function renderCurrentScreen() {
+  const active = document.querySelector('.screen.active');
+  if (active) navigate(active.id.replace('screen-', ''));
+}
+
+async function syncAccountData() {
+  const uid = state.session.user.id;
+  const { data, error } = await sbClient.from('user_data').select('*').eq('id', uid).maybeSingle();
+  if (error) { notify('Could not load your account data: ' + error.message, true); return; }
+  if (data) {
+    state.decks = data.decks || {};
+    state.dailyDoseSets = data.dailydose_sets || {};
+    state.dailyDoseHistory = data.dailydose_history || {};
+    state.dailyDoseMeta = data.dailydose_meta || {};
+    notify('Account data loaded.');
+  } else {
+    const hasLocalData = Object.keys(state.decks).length > 0 || Object.keys(state.dailyDoseSets).length > 0;
+    const importLocal = hasLocalData && confirm('Import your existing decks and Daily Dose progress into this account?');
+    if (!importLocal) {
+      state.decks = {}; state.dailyDoseSets = {}; state.dailyDoseHistory = {}; state.dailyDoseMeta = {};
+    }
+    persistUserData();
+    notify(importLocal ? 'Imported your local data into your account.' : 'Account created — starting fresh.');
+  }
+  try {
+    const { data: stats } = await sbClient.from('leaderboard_stats').select('total_correct,total_reviewed').eq('id', uid).maybeSingle();
+    if (stats) state.stats = { totalCorrect: stats.total_correct, totalReviewed: stats.total_reviewed };
+  } catch(e) {}
+  renderCurrentScreen();
+}
+
+async function handleSession(session) {
+  const previousUserId = state.session ? state.session.user.id : null;
+  const newUserId = session ? session.user.id : null;
+  state.session = session;
+  updateAuthUI();
+  if (session && newUserId !== state.syncedForUserId) {
+    state.syncedForUserId = newUserId;
+    try {
+      const { data: profile } = await sbClient.from('profiles').select('display_name').eq('id', newUserId).maybeSingle();
+      state.profileName = profile && profile.display_name ? profile.display_name : null;
+    } catch(e) { state.profileName = null; }
+    updateAuthUI();
+    await syncAccountData();
+  } else if (!session && previousUserId) {
+    state.syncedForUserId = null;
+    state.profileName = null;
+    load(); loadDailyDose(); loadStats();
+    renderCurrentScreen();
+  }
+}
+
+if (sbClient) {
+  sbClient.auth.onAuthStateChange((event, session) => { handleSession(session); });
+}
+
+/* =====================================================================
+   LEADERBOARD
+===================================================================== */
+async function renderLeaderboard() {
+  const loading = document.getElementById('leaderboard-loading');
+  const wrap = document.getElementById('leaderboard-table-wrap');
+  const empty = document.getElementById('leaderboard-empty');
+  wrap.style.display = 'none'; empty.style.display = 'none';
+  if (!sbClient) { empty.style.display = 'block'; return; }
+  loading.style.display = 'block';
+  const { data, error } = await sbClient.from('leaderboard_stats').select('*').order('total_correct', { ascending: false }).limit(50);
+  loading.style.display = 'none';
+  if (error) { notify('Could not load rankings: ' + error.message, true); empty.style.display = 'block'; return; }
+  if (!data || data.length === 0) { empty.style.display = 'block'; return; }
+  document.getElementById('leaderboard-tbody').innerHTML = data.map((row, i) => `<tr>
+      <td class="td-num">${i+1}</td>
+      <td>${esc(row.display_name || 'Anonymous')}${state.session && row.id === state.session.user.id ? ' (you)' : ''}</td>
+      <td>${row.total_correct}</td>
+      <td>${row.total_reviewed}</td>
+    </tr>`).join('');
+  wrap.style.display = 'block';
+}
+
+/* =====================================================================
    INIT
 ===================================================================== */
 load();
 loadDailyDose();
+loadStats();
 try { applyQuizFont(localStorage.getItem('jpquiz_standard_font') === '1'); } catch(e) {}
+updateAuthUI();
 navigate('home');
 </script>
 </body>
