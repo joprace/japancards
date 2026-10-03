@@ -450,9 +450,64 @@
 
   .dd-add-panel { background: var(--card-bg); border: 2px solid var(--ink); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
 
+  /* ===================== AVATARS / ACCOUNT PAGE ===================== */
+  .avatar-circle { border-radius: 50%; object-fit: cover; display: inline-block; vertical-align: middle; flex-shrink: 0; }
+  #auth-status.auth-clickable { cursor: pointer; }
+  .account-header { display: flex; align-items: center; gap: 20px; }
+  .account-avatar-big { width: 84px; height: 84px; }
+  .account-name { margin-bottom: 4px; }
+
   ::-webkit-scrollbar { width: 8px; }
   ::-webkit-scrollbar-track { background: var(--paper); }
   ::-webkit-scrollbar-thumb { background: var(--ink); border-radius: 4px; }
+
+  /* ===================== RESPONSIVE / MOBILE ===================== */
+  @media (max-width: 680px) {
+    .app { padding: 0 14px 40px; }
+
+    /* Header: let the logo and nav links wrap onto their own rows instead of
+       overflowing off the right edge of the screen. */
+    .site-header { flex-wrap: wrap; gap: 10px 14px; padding: 20px 0 16px; }
+    .logo-kanji { font-size: 2.1rem; }
+    .logo-text { font-size: 0.68rem; }
+    .nav-link { margin-left: 0 !important; margin-right: 0 !important; font-size: 0.68rem !important; padding: 4px 2px !important; }
+    #auth-area { margin-right: 0 !important; }
+    #tts-toggle-btn { margin-right: 0 !important; }
+    .breadcrumb { flex-basis: 100%; margin-left: 0; order: 10; font-size: 0.68rem; flex-wrap: wrap; }
+
+    h1 { font-size: 1.5rem; }
+    .subtitle { margin-bottom: 22px; }
+
+    .home-top, .account-header { flex-wrap: wrap; }
+    .account-avatar-big { width: 64px; height: 64px; }
+
+    .dd-rate-row { gap: 8px; }
+    .dd-rate-btn { font-size: 0.66rem; padding: 14px 6px; }
+
+    .setup-card { padding: 22px 18px; }
+    .modal-overlay { padding: 14px; }
+    .modal { padding: 22px; }
+
+    .results-big { padding: 32px 20px; }
+    .results-percent { font-size: 3.4rem; }
+    .results-kanji-bg { font-size: 5.5rem; margin-bottom: -28px; }
+
+    .flashcard-large { padding: 36px 20px; min-height: 240px; }
+    .flashcard-front { font-size: 2.8rem; }
+    .typing-input-large { font-size: 1.5rem; padding: 16px; }
+
+    .options-grid { grid-template-columns: 1fr; }
+    .memory-grid { gap: 8px; }
+
+    /* Multi-column data rows become single-column stacks so nothing gets
+       squeezed unreadably narrow. */
+    .edit-inline-grid, .dd-set-card-row, .preview-item { grid-template-columns: 1fr; gap: 6px; }
+
+    /* Tables (card lists, rankings) scroll horizontally rather than
+       squashing their columns illegibly. */
+    .card-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .card-table-wrap table { min-width: 480px; }
+  }
 </style>
 </head>
 <body>
@@ -462,11 +517,12 @@
   <header class="site-header">
     <span class="logo-kanji" onclick="navigate('home')" style="cursor:pointer" title="Home">漢字</span>
     <span class="logo-text">Japanese Flashcard Quiz</span>
-    <a class="nav-link" onclick="navigate('market')" style="cursor:pointer;margin-left:auto;margin-right:20px;font-size:0.75rem;color:var(--ink);text-decoration:none;letter-spacing:0.1em;padding:4px 8px;border-bottom:2px solid transparent;transition:var(--trans);" onmouseover="this.style.color='var(--red)';this.style.borderBottomColor='var(--red)'" onmouseout="this.style.color='var(--ink)';this.style.borderBottomColor='transparent'">市場 MARKET</a>
+    <a class="nav-link" onclick="navigate('home')" style="cursor:pointer;margin-left:auto;margin-right:20px;font-size:0.75rem;color:var(--ink);text-decoration:none;letter-spacing:0.1em;padding:4px 8px;border-bottom:2px solid transparent;transition:var(--trans);" onmouseover="this.style.color='var(--red)';this.style.borderBottomColor='var(--red)'" onmouseout="this.style.color='var(--ink)';this.style.borderBottomColor='transparent'">📚 DECKS</a>
+    <a class="nav-link" onclick="navigate('market')" style="cursor:pointer;margin-right:20px;font-size:0.75rem;color:var(--ink);text-decoration:none;letter-spacing:0.1em;padding:4px 8px;border-bottom:2px solid transparent;transition:var(--trans);" onmouseover="this.style.color='var(--red)';this.style.borderBottomColor='var(--red)'" onmouseout="this.style.color='var(--ink)';this.style.borderBottomColor='transparent'">市場 MARKET</a>
     <a class="nav-link" onclick="navigate('dailydose')" style="cursor:pointer;margin-right:20px;font-size:0.75rem;color:var(--ink);text-decoration:none;letter-spacing:0.1em;padding:4px 8px;border-bottom:2px solid transparent;transition:var(--trans);" onmouseover="this.style.color='var(--red)';this.style.borderBottomColor='var(--red)'" onmouseout="this.style.color='var(--ink)';this.style.borderBottomColor='transparent'">常用 DAILY DOSE</a>
     <a class="nav-link" onclick="navigate('leaderboard')" style="cursor:pointer;margin-right:20px;font-size:0.75rem;color:var(--ink);text-decoration:none;letter-spacing:0.1em;padding:4px 8px;border-bottom:2px solid transparent;transition:var(--trans);" onmouseover="this.style.color='var(--red)';this.style.borderBottomColor='var(--red)'" onmouseout="this.style.color='var(--ink)';this.style.borderBottomColor='transparent'">🏆 RANKINGS</a>
     <div id="auth-area" style="display:flex;align-items:center;gap:8px;margin-right:16px;">
-      <span id="auth-status" style="font-size:0.72rem;color:var(--muted);letter-spacing:0.05em;white-space:nowrap;">👤 Guest</span>
+      <span id="auth-status" style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--muted);letter-spacing:0.05em;white-space:nowrap;">👤 Guest</span>
       <button class="btn btn-sm" id="auth-action-btn" onclick="handleAuthButtonClick()">Log In</button>
     </div>
     <button id="tts-toggle-btn" onclick="toggleTTS()" title="Toggle voice reading" style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:2px solid var(--ink);background:var(--ink);color:var(--paper);font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.08em;cursor:pointer;border-radius:var(--radius);transition:var(--trans);text-transform:uppercase;white-space:nowrap;margin-right:16px;">🔊 Voice On</button>
@@ -863,6 +919,50 @@
     <div id="leaderboard-empty" style="display:none" class="empty-state"><span class="empty-kanji">空</span><p>No rankings yet.</p><p>Log in and start reviewing to appear here.</p></div>
   </div>
 
+  <!-- ============================================================ SCREEN: ACCOUNT ============================================================ -->
+  <div class="screen" id="screen-account">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;gap:16px;flex-wrap:wrap">
+      <div class="account-header">
+        <div style="position:relative;width:84px;height:84px;flex-shrink:0;">
+          <img id="account-avatar-img" class="avatar-circle account-avatar-big" style="display:none">
+          <div id="account-avatar-fallback" class="avatar-circle account-avatar-big" style="display:flex;align-items:center;justify-content:center;background:var(--red);color:white;font-family:'Zen Old Mincho',serif;font-weight:900;font-size:2.2rem;"></div>
+        </div>
+        <div>
+          <h1 class="account-name" id="account-name-display"></h1>
+          <p class="subtitle" id="account-member-since" style="margin-bottom:0"></p>
+        </div>
+      </div>
+      <button class="btn btn-sm" onclick="navigate('home')">← Back</button>
+    </div>
+
+    <div id="account-owner-controls" style="display:none">
+      <div class="dd-add-panel">
+        <h2>Profile Picture</h2>
+        <p class="subtitle" style="margin-bottom:12px">Upload any image — it'll be cropped to a circle</p>
+        <input type="file" id="avatar-file-input" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('avatar-file-input').click()">↑ Upload New Picture</button>
+      </div>
+      <div class="dd-add-panel">
+        <h2>Display Name</h2>
+        <div class="form-row">
+          <input type="text" id="account-name-input" placeholder="Your name">
+          <button class="btn btn-primary btn-sm" onclick="updateDisplayName()">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <h2>Stats</h2>
+    <div class="results-breakdown" style="margin-bottom:32px">
+      <div class="results-stat stat-correct"><div class="results-stat-num" id="account-stat-correct"></div><div class="results-stat-label">Correct</div></div>
+      <div class="results-stat"><div class="results-stat-num" id="account-stat-reviewed"></div><div class="results-stat-label">Reviewed</div></div>
+      <div class="results-stat"><div class="results-stat-num" id="account-stat-accuracy"></div><div class="results-stat-label">Accuracy</div></div>
+    </div>
+
+    <div id="account-logout-wrap" style="display:none">
+      <button class="btn btn-red" onclick="signOutAccount()">Log Out</button>
+    </div>
+  </div>
+
 </div><!-- /app -->
 
 <!-- ============================================================ MODALS ============================================================ -->
@@ -1045,6 +1145,8 @@ let state = {
   session: null,            // current Supabase auth session, or null = guest mode
   syncedForUserId: null,    // guards against re-syncing on token-refresh events
   profileName: null,
+  avatarUrl: null,
+  viewingAccountId: null,
   authTab: 'login',
   stats: { totalCorrect: 0, totalReviewed: 0 }
 };
@@ -1092,6 +1194,7 @@ function persistStats() {
     sbClient.from('leaderboard_stats').upsert({
       id: state.session.user.id,
       display_name: state.profileName || (state.session.user.email || 'Anonymous').split('@')[0],
+      avatar_url: state.avatarUrl || null,
       total_correct: state.stats.totalCorrect,
       total_reviewed: state.stats.totalReviewed,
       updated_at: new Date().toISOString()
@@ -1126,6 +1229,7 @@ function navigate(screen) {
   if (screen === 'dailydose-setup')   renderDailyDoseSetup();
   if (screen === 'dailydose-results') renderDailyDoseResults();
   if (screen === 'leaderboard') renderLeaderboard();
+  if (screen === 'account') renderAccountPage();
 }
 
 function updateBreadcrumb(screen) {
@@ -1146,6 +1250,7 @@ function updateBreadcrumb(screen) {
   else if (screen === 'dailydose-game')    html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Daily Dose Session</span>`;
   else if (screen === 'dailydose-results') html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Daily Dose Results</span>`;
   else if (screen === 'leaderboard') html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Rankings</span>`;
+  else if (screen === 'account') html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Account</span>`;
   bc.innerHTML = html;
 }
 
@@ -2489,17 +2594,30 @@ function renderDailyDoseResults() {
 /* =====================================================================
    ACCOUNT SYSTEM — AUTH UI
 ===================================================================== */
+function renderAvatarHtml(url, name, size, fontSize) {
+  if (url) {
+    return `<img src="${esc(url)}" class="avatar-circle" style="width:${size}px;height:${size}px">`;
+  }
+  const initial = esc(((name || '?').trim().charAt(0) || '?').toUpperCase());
+  const fs = fontSize || Math.round(size * 0.5);
+  return `<span class="avatar-circle" style="width:${size}px;height:${size}px;background:var(--red);color:white;display:inline-flex;align-items:center;justify-content:center;font-family:'Zen Old Mincho',serif;font-weight:900;font-size:${fs}px;">${initial}</span>`;
+}
+
 function updateAuthUI() {
   const statusEl = document.getElementById('auth-status');
   const btn = document.getElementById('auth-action-btn');
   if (!statusEl || !btn) return;
   if (state.session) {
-    const name = state.profileName || state.session.user.email;
-    statusEl.textContent = `👤 ${name}`;
-    btn.textContent = 'Log Out';
-    btn.onclick = signOutAccount;
+    const name = state.profileName || (state.session.user.email || '').split('@')[0];
+    statusEl.innerHTML = `${renderAvatarHtml(state.avatarUrl, name, 22, 11)}<span>${esc(name)}</span>`;
+    statusEl.classList.add('auth-clickable');
+    statusEl.onclick = () => openAccountPage(state.session.user.id);
+    btn.style.display = 'none';
   } else {
     statusEl.textContent = '👤 Guest';
+    statusEl.classList.remove('auth-clickable');
+    statusEl.onclick = null;
+    btn.style.display = 'inline-flex';
     btn.textContent = 'Log In';
     btn.onclick = handleAuthButtonClick;
   }
@@ -2539,13 +2657,14 @@ async function submitAuthForm() {
   const password = document.getElementById('auth-password').value;
   const name = document.getElementById('auth-name').value.trim();
   if (!email || !password) { showAuthError('Email and password are required.'); return; }
+  if (state.authTab === 'signup' && !name) { showAuthError('Please choose a display name.'); return; }
   const btn = document.getElementById('auth-submit-btn');
   btn.disabled = true;
   try {
     if (state.authTab === 'signup') {
       const { data, error } = await sbClient.auth.signUp({ email, password });
       if (error) { showAuthError(error.message); return; }
-      if (name && data.user) {
+      if (data.user) {
         try { await sbClient.from('profiles').upsert({ id: data.user.id, display_name: name }); } catch(e) {}
       }
       if (!data.session) {
@@ -2616,14 +2735,24 @@ async function handleSession(session) {
   if (session && newUserId !== state.syncedForUserId) {
     state.syncedForUserId = newUserId;
     try {
-      const { data: profile } = await sbClient.from('profiles').select('display_name').eq('id', newUserId).maybeSingle();
+      const { data: profile } = await sbClient.from('profiles').select('display_name,avatar_url').eq('id', newUserId).maybeSingle();
       state.profileName = profile && profile.display_name ? profile.display_name : null;
-    } catch(e) { state.profileName = null; }
+      state.avatarUrl = profile && profile.avatar_url ? profile.avatar_url : null;
+    } catch(e) { state.profileName = null; state.avatarUrl = null; }
+
+    if (!state.profileName) {
+      const suggested = (session.user.email || 'Player').split('@')[0];
+      const chosen = (prompt('Choose a display name for the leaderboard:', suggested) || '').trim();
+      state.profileName = chosen || suggested;
+      try { await sbClient.from('profiles').upsert({ id: newUserId, display_name: state.profileName }); } catch(e) {}
+    }
+
     updateAuthUI();
     await syncAccountData();
   } else if (!session && previousUserId) {
     state.syncedForUserId = null;
     state.profileName = null;
+    state.avatarUrl = null;
     load(); loadDailyDose(); loadStats();
     renderCurrentScreen();
   }
@@ -2647,13 +2776,136 @@ async function renderLeaderboard() {
   loading.style.display = 'none';
   if (error) { notify('Could not load rankings: ' + error.message, true); empty.style.display = 'block'; return; }
   if (!data || data.length === 0) { empty.style.display = 'block'; return; }
-  document.getElementById('leaderboard-tbody').innerHTML = data.map((row, i) => `<tr>
+  document.getElementById('leaderboard-tbody').innerHTML = data.map((row, i) => `<tr style="cursor:pointer" onclick="openAccountPage('${row.id}')">
       <td class="td-num">${i+1}</td>
-      <td>${esc(row.display_name || 'Anonymous')}${state.session && row.id === state.session.user.id ? ' (you)' : ''}</td>
+      <td style="display:flex;align-items:center;gap:10px">${renderAvatarHtml(row.avatar_url, row.display_name, 28, 13)}<span>${esc(row.display_name || 'Anonymous')}${state.session && row.id === state.session.user.id ? ' (you)' : ''}</span></td>
       <td>${row.total_correct}</td>
       <td>${row.total_reviewed}</td>
     </tr>`).join('');
   wrap.style.display = 'block';
+}
+
+/* =====================================================================
+   ACCOUNT PAGE
+===================================================================== */
+function openAccountPage(userId) {
+  if (!userId) return;
+  state.viewingAccountId = userId;
+  navigate('account');
+}
+
+async function renderAccountPage() {
+  const uid = state.viewingAccountId;
+  const isOwn = !!(state.session && uid === state.session.user.id);
+  document.getElementById('account-owner-controls').style.display = isOwn ? 'block' : 'none';
+  document.getElementById('account-logout-wrap').style.display = isOwn ? 'block' : 'none';
+
+  if (!sbClient || !uid) { navigate('home'); return; }
+
+  let displayName = 'Anonymous', avatarUrl = null, totalCorrect = 0, totalReviewed = 0, createdAt = null;
+
+  if (isOwn) {
+    displayName = state.profileName || (state.session.user.email || '').split('@')[0];
+    avatarUrl = state.avatarUrl;
+    totalCorrect = state.stats.totalCorrect;
+    totalReviewed = state.stats.totalReviewed;
+    document.getElementById('account-name-input').value = displayName;
+  }
+
+  try {
+    const [{ data: prof }, { data: lb }] = await Promise.all([
+      sbClient.from('profiles').select('display_name,avatar_url,created_at').eq('id', uid).maybeSingle(),
+      sbClient.from('leaderboard_stats').select('total_correct,total_reviewed,display_name,avatar_url').eq('id', uid).maybeSingle()
+    ]);
+    if (prof) {
+      createdAt = prof.created_at;
+      if (!isOwn) { displayName = prof.display_name || displayName; avatarUrl = prof.avatar_url || avatarUrl; }
+    }
+    if (lb) {
+      if (!isOwn) { totalCorrect = lb.total_correct; totalReviewed = lb.total_reviewed; if (!prof || !prof.display_name) displayName = lb.display_name || displayName; if (!avatarUrl) avatarUrl = lb.avatar_url; }
+    }
+  } catch(e) { /* fall back to whatever we already have */ }
+
+  // Only re-check: if this screen is still showing the account the user actually asked for
+  if (state.viewingAccountId !== uid) return;
+
+  document.getElementById('account-name-display').textContent = displayName;
+  document.getElementById('account-member-since').textContent = createdAt ? `Member since ${new Date(createdAt).toLocaleDateString()}` : '';
+
+  const img = document.getElementById('account-avatar-img');
+  const fallback = document.getElementById('account-avatar-fallback');
+  if (avatarUrl) {
+    img.src = avatarUrl; img.style.display = 'block'; fallback.style.display = 'none';
+  } else {
+    img.style.display = 'none'; fallback.style.display = 'flex';
+    fallback.textContent = ((displayName || '?').trim().charAt(0) || '?').toUpperCase();
+  }
+
+  document.getElementById('account-stat-correct').textContent = totalCorrect;
+  document.getElementById('account-stat-reviewed').textContent = totalReviewed;
+  document.getElementById('account-stat-accuracy').textContent = (totalReviewed > 0 ? Math.round((totalCorrect / totalReviewed) * 100) : 0) + '%';
+}
+
+async function updateDisplayName() {
+  if (!state.session) return;
+  const name = document.getElementById('account-name-input').value.trim();
+  if (!name) { notify('Please enter a name.', true); return; }
+  state.profileName = name;
+  try { await sbClient.from('profiles').upsert({ id: state.session.user.id, display_name: name }); } catch(e) {}
+  persistStats();
+  updateAuthUI();
+  renderAccountPage();
+  notify('Display name updated.');
+}
+
+/* =====================================================================
+   PROFILE PICTURE UPLOAD
+===================================================================== */
+function resizeImageToBlob(file, size) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const scale = Math.max(size / img.width, size / img.height);
+        const w = img.width * scale, h = img.height * scale;
+        ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Could not process image')), 'image/jpeg', 0.85);
+      };
+      img.onerror = () => reject(new Error('Could not read that image'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('Could not read that file'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleAvatarUpload(evt) {
+  const file = evt.target.files[0];
+  evt.target.value = '';
+  if (!file) return;
+  if (!sbClient || !state.session) { notify('Log in to set a profile picture.', true); return; }
+  if (!file.type.startsWith('image/')) { notify('Please choose an image file.', true); return; }
+  notify('Uploading picture…');
+  try {
+    const blob = await resizeImageToBlob(file, 256);
+    const path = `${state.session.user.id}.jpg`;
+    const { error: uploadError } = await sbClient.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+    if (uploadError) { notify('Could not upload picture: ' + uploadError.message, true); return; }
+    const { data: pub } = sbClient.storage.from('avatars').getPublicUrl(path);
+    const url = pub.publicUrl + '?t=' + Date.now();
+    state.avatarUrl = url;
+    try { await sbClient.from('profiles').upsert({ id: state.session.user.id, avatar_url: url }); } catch(e) {}
+    persistStats();
+    updateAuthUI();
+    renderAccountPage();
+    notify('Profile picture updated.');
+  } catch(e) {
+    notify('Could not process that image: ' + e.message, true);
+  }
 }
 
 /* =====================================================================
