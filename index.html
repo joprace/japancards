@@ -763,21 +763,77 @@
 
   <!-- ============================================================ SCREEN: MARKET ============================================================ -->
   <div class="screen" id="screen-market">
-    <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;gap:16px;flex-wrap:wrap">
-      <div><h1>市場 Community Market</h1><p class="subtitle">Discover and share flashcard decks — powered by live database</p></div>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;gap:16px;flex-wrap:wrap">
+      <div><h1>市場 Market</h1><p class="subtitle">Official JLPT decks and community-shared decks</p></div>
       <button class="btn btn-sm" onclick="navigate('home')">← Back</button>
     </div>
-    <div class="market-header">
-      <div class="search-bar">
-        <input type="text" id="market-search" placeholder="Search decks..." onkeyup="filterMarketDecks()">
+
+    <div class="selection-mode-toggle" style="max-width:420px">
+      <button class="selection-mode-btn" id="market-tab-official" onclick="switchMarketTab('official')">🎓 Official (N5–N3)</button>
+      <button class="selection-mode-btn active" id="market-tab-community" onclick="switchMarketTab('community')">市場 Community</button>
+    </div>
+
+    <div id="market-community-panel" style="margin-top:24px">
+      <div class="market-header">
+        <div class="search-bar">
+          <input type="text" id="market-search" placeholder="Search decks..." onkeyup="filterMarketDecks()">
+        </div>
+        <button class="btn btn-primary" onclick="openShareModal()">↑ Share a Deck</button>
       </div>
-      <button class="btn btn-primary" onclick="openShareModal()">↑ Share a Deck</button>
+      <div id="market-loading" style="text-align:center;padding:40px;color:var(--muted);font-size:0.85rem;display:none">
+        <div style="font-family:'Zen Old Mincho',serif;font-size:3rem;opacity:0.2;margin-bottom:12px">読</div>
+        Loading decks from database...
+      </div>
+      <div class="deck-grid" id="market-deck-list"></div>
     </div>
-    <div id="market-loading" style="text-align:center;padding:40px;color:var(--muted);font-size:0.85rem;display:none">
-      <div style="font-family:'Zen Old Mincho',serif;font-size:3rem;opacity:0.2;margin-bottom:12px">読</div>
-      Loading decks from database...
+
+    <div id="market-official-panel" style="display:none;margin-top:24px">
+      <p class="subtitle" style="margin-bottom:20px">Each deck builds on the words from every deck before it. Add a deck to practice it with the normal game modes, or read an AI-generated story built only from the words you've unlocked so far.</p>
+      <div id="official-loading" style="text-align:center;padding:40px;color:var(--muted);font-size:0.85rem;display:none">
+        <div style="font-family:'Zen Old Mincho',serif;font-size:3rem;opacity:0.2;margin-bottom:12px">学</div>
+        Loading official decks...
+      </div>
+      <div id="official-decks-container"></div>
     </div>
-    <div class="deck-grid" id="market-deck-list"></div>
+  </div>
+
+  <!-- ============================================================ SCREEN: STORY MODE SETUP ============================================================ -->
+  <div class="screen" id="screen-story-setup">
+    <div style="max-width:560px;margin:0 auto">
+      <h1>📖 Story Mode</h1>
+      <p class="subtitle" id="story-setup-subtitle"></p>
+      <div class="setup-card">
+        <h2 id="story-setup-deck-name"></h2>
+        <p class="range-info" id="story-setup-wordcount" style="margin-bottom:20px"></p>
+        <div class="setup-actions">
+          <button class="btn btn-sm" onclick="navigate('market')">← Back</button>
+          <button class="btn btn-primary" id="story-generate-btn" onclick="generateStory()">▶ Generate Story</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ SCREEN: STORY MODE ============================================================ -->
+  <div class="screen" id="screen-story">
+    <div style="max-width:640px;margin:0 auto">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px;flex-wrap:wrap">
+        <div><h1 id="story-title"></h1><p class="subtitle" id="story-subtitle" style="margin-bottom:0"></p></div>
+        <button class="btn btn-sm" onclick="navigate('market')">← Back to Market</button>
+      </div>
+      <div id="story-loading" style="text-align:center;padding:60px 20px;color:var(--muted);display:none">
+        <div style="font-family:'Zen Old Mincho',serif;font-size:3rem;opacity:0.2;margin-bottom:12px">書</div>
+        Writing your story...
+      </div>
+      <div id="story-error" style="display:none" class="empty-state"><span class="empty-kanji">錯</span><p id="story-error-text"></p></div>
+      <div id="story-content" style="display:none">
+        <div class="flashcard-large" style="cursor:default;text-align:left;align-items:flex-start;min-height:auto;padding:32px">
+          <div id="story-text" style="font-family:'Noto Serif JP',serif;font-size:1.3rem;line-height:2.1;white-space:pre-wrap"></div>
+        </div>
+        <div style="text-align:center;margin-top:20px">
+          <button class="btn btn-primary" onclick="generateStory()">↺ Generate Another Story</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ============================================================ SCREEN: DAILY DOSE HOME ============================================================ -->
@@ -1106,6 +1162,7 @@ async function sbFetch(path, options = {}) {
 }
 
 async function dbGetAllDecks() { return await sbFetch('market_decks?select=*&order=downloads.desc,created_at.desc'); }
+async function dbGetOfficialDecks() { return await sbFetch('official_decks?select=*&order=level_rank.asc,deck_number.asc'); }
 async function dbInsertDeck(name, authorName, cards) { return await sbFetch('market_decks', { method: 'POST', body: JSON.stringify({ name, author_name: authorName, cards }) }); }
 async function dbIncrementDownloads(id, currentDownloads) { return await sbFetch(`market_decks?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ downloads: currentDownloads + 1 }) }); }
 function isSupabaseConfigured() { return SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY_HERE'; }
@@ -1134,6 +1191,8 @@ let state = {
   memory: { cards: [], flipped: [], matched: [], moves: 0, pairsFound: 0 },
   marketDecks: [],
   allMarketDecks: [],
+  officialDecksLoaded: false,
+  currentStoryDeckId: null,
   // Daily Dose
   dailyDoseSets: {},      // { setId: { name, cards: [{id,japanese,reading,meaning}] } }
   dailyDoseHistory: {},   // { setId: { cardId: { green,orange,red,seenCount,lastRating,lastSeenAt,lastSeenSession } } }
@@ -1230,6 +1289,7 @@ function navigate(screen) {
   if (screen === 'dailydose-results') renderDailyDoseResults();
   if (screen === 'leaderboard') renderLeaderboard();
   if (screen === 'account') renderAccountPage();
+  if (screen === 'story-setup') renderStorySetup();
 }
 
 function updateBreadcrumb(screen) {
@@ -1251,6 +1311,8 @@ function updateBreadcrumb(screen) {
   else if (screen === 'dailydose-results') html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Daily Dose Results</span>`;
   else if (screen === 'leaderboard') html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Rankings</span>`;
   else if (screen === 'account') html = `<a onclick="navigate('home')">Decks</a><span>›</span><span>Account</span>`;
+  else if (screen === 'story-setup') html = `<a onclick="navigate('home')">Decks</a><span>›</span><a onclick="navigate('market')">Market</a><span>›</span><span>Story Setup</span>`;
+  else if (screen === 'story') html = `<a onclick="navigate('home')">Decks</a><span>›</span><a onclick="navigate('market')">Market</a><span>›</span><span>Story</span>`;
   bc.innerHTML = html;
 }
 
@@ -2030,6 +2092,128 @@ async function shareDeckToDB() {
     await renderMarket();
   } catch(e) { notify('Share failed: ' + e.message, true); }
   finally { btn.disabled = false; btn.textContent = '↑ Share to Market'; }
+}
+
+/* =====================================================================
+   OFFICIAL DECKS (JLPT N5–N3) + STORY MODE
+===================================================================== */
+let officialDecksCache = [];
+
+function switchMarketTab(tab) {
+  document.getElementById('market-tab-official').classList.toggle('active', tab === 'official');
+  document.getElementById('market-tab-community').classList.toggle('active', tab === 'community');
+  document.getElementById('market-official-panel').style.display = tab === 'official' ? 'block' : 'none';
+  document.getElementById('market-community-panel').style.display = tab === 'community' ? 'block' : 'none';
+  if (tab === 'official' && !state.officialDecksLoaded) renderOfficialDecks();
+}
+
+async function renderOfficialDecks() {
+  const loading = document.getElementById('official-loading');
+  const container = document.getElementById('official-decks-container');
+  loading.style.display = 'block'; container.innerHTML = '';
+  try {
+    const decks = await dbGetOfficialDecks();
+    officialDecksCache = decks || [];
+    state.officialDecksLoaded = true;
+    loading.style.display = 'none';
+    if (officialDecksCache.length === 0) {
+      container.innerHTML = `<div class="empty-state"><span class="empty-kanji">空</span><p>No official decks yet.</p></div>`;
+      return;
+    }
+    const byLevel = {};
+    officialDecksCache.forEach(d => { (byLevel[d.level] = byLevel[d.level] || []).push(d); });
+    const levelsInOrder = Object.keys(byLevel).sort((a, b) => byLevel[a][0].level_rank - byLevel[b][0].level_rank);
+    container.innerHTML = levelsInOrder.map(level => `
+      <h2 style="margin-top:28px">JLPT ${esc(level)}</h2>
+      <div class="deck-grid">
+        ${byLevel[level].map(d => {
+          const count = (d.cards || []).length;
+          return `<div class="deck-card" style="cursor:default">
+            <div class="deck-card-kanji">学</div>
+            <div class="deck-card-name">${esc(d.name)}</div>
+            <div class="deck-card-meta">${count} words · ${esc(d.level)}</div>
+            <div class="deck-card-actions">
+              <button class="btn btn-sm btn-primary" onclick="addOfficialDeckToMyDecks('${esc(d.id)}')">Add to My Decks</button>
+              <button class="btn btn-sm" onclick="openStorySetup('${esc(d.id)}')">📖 Read Story</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    `).join('');
+  } catch(e) {
+    loading.style.display = 'none';
+    container.innerHTML = `<div class="empty-state"><span class="empty-kanji">錯</span><p>Could not load official decks.</p><p style="font-size:0.75rem;color:var(--red)">${esc(e.message)}</p></div>`;
+  }
+}
+
+function addOfficialDeckToMyDecks(deckId) {
+  const deck = officialDecksCache.find(d => d.id === deckId);
+  if (!deck) { notify('Deck not found.', true); return; }
+  const newDeckId = 'deck_' + Date.now();
+  state.decks[newDeckId] = { name: `${deck.name} (${deck.level})`, cards: deck.cards.map(c => ({ japanese: c.japanese, reading: c.reading, meaning: c.meaning })) };
+  save();
+  notify(`Added "${deck.name}" to your decks!`);
+}
+
+/* Every word from this deck plus every deck that comes before it (lower JLPT
+   level first, then lower deck number) — never words from a higher level or
+   a later deck. */
+function getCumulativeVocabForDeck(deckId) {
+  const deck = officialDecksCache.find(d => d.id === deckId);
+  if (!deck) return { deck: null, vocab: [] };
+  const vocab = [];
+  const seen = new Set();
+  officialDecksCache
+    .filter(d => d.level_rank < deck.level_rank || (d.level_rank === deck.level_rank && d.deck_number <= deck.deck_number))
+    .sort((a, b) => a.level_rank - b.level_rank || a.deck_number - b.deck_number)
+    .forEach(d => (d.cards || []).forEach(c => {
+      if (!seen.has(c.japanese)) { seen.add(c.japanese); vocab.push(c); }
+    }));
+  return { deck, vocab };
+}
+
+function openStorySetup(deckId) {
+  state.currentStoryDeckId = deckId;
+  navigate('story-setup');
+}
+
+function renderStorySetup() {
+  const { deck, vocab } = getCumulativeVocabForDeck(state.currentStoryDeckId);
+  if (!deck) { navigate('market'); return; }
+  document.getElementById('story-setup-subtitle').textContent = `Uses every word from ${deck.level} Deck 1 through ${deck.name} — nothing from later decks or higher levels.`;
+  document.getElementById('story-setup-deck-name').textContent = `${deck.name} (${deck.level})`;
+  document.getElementById('story-setup-wordcount').textContent = `${vocab.length} words available for this story`;
+}
+
+async function generateStory() {
+  const { deck, vocab } = getCumulativeVocabForDeck(state.currentStoryDeckId);
+  if (!deck) { notify('Deck not found.', true); return; }
+  if (!sbClient) { notify('Story generation is unavailable right now.', true); return; }
+
+  navigate('story');
+  document.getElementById('story-title').textContent = `📖 ${deck.name}`;
+  document.getElementById('story-subtitle').textContent = `${deck.level} · built from ${vocab.length} words`;
+  document.getElementById('story-loading').style.display = 'block';
+  document.getElementById('story-error').style.display = 'none';
+  document.getElementById('story-content').style.display = 'none';
+
+  try {
+    const { data, error } = await sbClient.functions.invoke('generate-story', {
+      body: { vocab: vocab.map(c => ({ japanese: c.japanese, reading: c.reading })), level: deck.level, deckName: deck.name }
+    });
+    document.getElementById('story-loading').style.display = 'none';
+    if (error || !data || !data.story) {
+      document.getElementById('story-error').style.display = 'block';
+      document.getElementById('story-error-text').textContent = 'Could not generate a story. Make sure the generate-story Edge Function is deployed. ' + (error ? error.message : '');
+      return;
+    }
+    document.getElementById('story-text').textContent = data.story;
+    document.getElementById('story-content').style.display = 'block';
+  } catch(e) {
+    document.getElementById('story-loading').style.display = 'none';
+    document.getElementById('story-error').style.display = 'block';
+    document.getElementById('story-error-text').textContent = 'Could not generate a story: ' + e.message;
+  }
 }
 
 /* =====================================================================
