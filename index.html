@@ -912,6 +912,7 @@
     <div class="quiz-progress-bar-wrap"><div class="quiz-progress-bar" id="dd-progress-bar"></div></div>
     <div class="quiz-meta">
       <span id="dd-counter">1 / 10</span>
+      <span id="dd-retry-badge" style="display:none;color:var(--red);font-weight:bold;letter-spacing:0.08em;text-transform:uppercase;font-size:0.68rem;margin-left:8px;">↻ Retry</span>
       <span class="quiz-score-live">
         <span style="color:var(--green);font-weight:bold" id="dd-live-green">🟢 0</span>
         <span style="color:var(--gold-light);font-weight:bold" id="dd-live-orange">🟠 0</span>
@@ -1199,7 +1200,7 @@ let state = {
   dailyDoseMeta: {},      // { setId: { sessionCount } } — how many Daily Dose sessions this set has run, so we can tell "how many doses ago" a card last appeared
   currentDailySet: null,
   ddAddSelectedIndices: new Set(),
-  ddSession: { cards: [], index: 0, green: 0, orange: 0, red: 0, flipped: false },
+  ddSession: { queue: [], cardTracker: {}, totalWords: 0, doneCount: 0, currentCard: null, green: 0, orange: 0, red: 0, flipped: false },
   // Account system
   session: null,            // current Supabase auth session, or null = guest mode
   syncedForUserId: null,    // guards against re-syncing on token-refresh events
@@ -2683,6 +2684,8 @@ function buildDailyDoseSession(setId, count, sessionNumber) {
   return [...selected].sort(() => Math.random() - 0.5);
 }
 
+const DD_RETRY_CAP = 5; // after this many misses on the same word in one round, let it go
+
 function startDailyDoseSession() {
   const count = parseInt(document.getElementById('dd-count-slider').value) || 1;
   const setId = state.currentDailySet;
@@ -2691,22 +2694,49 @@ function startDailyDoseSession() {
   const cards = buildDailyDoseSession(setId, count, sessionNumber);
   if (cards.length === 0) { notify('No cards available to review.', true); state.dailyDoseMeta[setId].sessionCount--; return; }
   saveDailyDose();
-  state.ddSession = { cards, index: 0, green: 0, orange: 0, red: 0, flipped: false, sessionNumber };
+
+  const cardTracker = {};
+  cards.forEach(c => { cardTracker[c.id] = { attempts: 0, recorded: false }; });
+
+  state.ddSession = {
+    queue: [...cards],       // cards still waiting to be shown this round (missed ones get re-inserted)
+    cardTracker,             // per-word attempt count + whether its first rating has been recorded
+    totalWords: cards.length,
+    doneCount: 0,            // distinct words finished with (mastered, or let go after the retry cap)
+    currentCard: null,
+    green: 0, orange: 0, red: 0, // these only ever reflect each word's FIRST rating in the round
+    flipped: false,
+    sessionNumber
+  };
   navigate('dailydose-game');
-  renderDDCard();
+  showNextDDCard();
 }
 
 /* =====================================================================
    DAILY DOSE — GAME
 ===================================================================== */
-function renderDDCard() {
+function showNextDDCard() {
   const sess = state.ddSession;
-  const card = sess.cards[sess.index];
-  document.getElementById('dd-progress-bar').style.width = (sess.index / sess.cards.length * 100) + '%';
-  document.getElementById('dd-counter').textContent = `${sess.index + 1} / ${sess.cards.length}`;
+  if (sess.queue.length === 0) { navigate('dailydose-results'); return; }
+  sess.currentCard = sess.queue.shift();
+  renderDDCard();
+}
+
+function updateDDLiveCounters() {
+  const sess = state.ddSession;
   document.getElementById('dd-live-green').textContent  = `🟢 ${sess.green}`;
   document.getElementById('dd-live-orange').textContent = `🟠 ${sess.orange}`;
   document.getElementById('dd-live-red').textContent    = `🔴 ${sess.red}`;
+}
+
+function renderDDCard() {
+  const sess = state.ddSession;
+  const card = sess.currentCard;
+  document.getElementById('dd-progress-bar').style.width = (sess.doneCount / sess.totalWords * 100) + '%';
+  document.getElementById('dd-counter').textContent = `${sess.doneCount} / ${sess.totalWords}`;
+  const tracker = sess.cardTracker[card.id];
+  document.getElementById('dd-retry-badge').style.display = (tracker && tracker.attempts > 0) ? 'inline' : 'none';
+  updateDDLiveCounters();
   sess.flipped = false;
   const fc = document.getElementById('dd-flashcard');
   fc.classList.remove('revealed');
@@ -2728,33 +2758,49 @@ function revealDDCard() {
   fc.classList.add('revealed'); fc.onclick = null;
   document.getElementById('dd-flip-hint').style.display = 'none';
   document.getElementById('dd-rate-row').style.display = 'grid';
-  const card = sess.cards[sess.index];
+  const card = sess.currentCard;
   ttsSpeak(card.reading || card.japanese);
 }
 
 function rateDDCard(color) {
   const sess = state.ddSession;
-  const card = sess.cards[sess.index];
-  const setId = state.currentDailySet;
-  if (!state.dailyDoseHistory[setId]) state.dailyDoseHistory[setId] = {};
-  const hist = state.dailyDoseHistory[setId];
-  if (!hist[card.id]) hist[card.id] = { green: 0, orange: 0, red: 0, seenCount: 0, lastRating: null, lastSeenAt: 0, lastSeenSession: 0 };
-  hist[card.id][color]++;
-  hist[card.id].seenCount++;
-  hist[card.id].lastRating = color;
-  hist[card.id].lastSeenAt = Date.now();
-  hist[card.id].lastSeenSession = sess.sessionNumber;
-  sess[color]++;
-  saveDailyDose();
-  bumpStats(color === 'green');
+  const card = sess.currentCard;
+  const tracker = sess.cardTracker[card.id];
+  tracker.attempts++;
 
-  document.getElementById('dd-live-green').textContent  = `🟢 ${sess.green}`;
-  document.getElementById('dd-live-orange').textContent = `🟠 ${sess.orange}`;
-  document.getElementById('dd-live-red').textContent    = `🔴 ${sess.red}`;
+  // Only the first time this word appears in the round gets recorded anywhere —
+  // into history/stats and into this round's green/orange/red tally. Retries that
+  // follow a miss are just extra reps and never count again, whatever they get rated.
+  if (!tracker.recorded) {
+    tracker.recorded = true;
+    const setId = state.currentDailySet;
+    if (!state.dailyDoseHistory[setId]) state.dailyDoseHistory[setId] = {};
+    const hist = state.dailyDoseHistory[setId];
+    if (!hist[card.id]) hist[card.id] = { green: 0, orange: 0, red: 0, seenCount: 0, lastRating: null, lastSeenAt: 0, lastSeenSession: 0 };
+    hist[card.id][color]++;
+    hist[card.id].seenCount++;
+    hist[card.id].lastRating = color;
+    hist[card.id].lastSeenAt = Date.now();
+    hist[card.id].lastSeenSession = sess.sessionNumber;
+    saveDailyDose();
+    bumpStats(color === 'green');
 
-  sess.index++;
-  if (sess.index >= sess.cards.length) { navigate('dailydose-results'); return; }
-  renderDDCard();
+    sess[color]++;
+    updateDDLiveCounters();
+  }
+
+  const isMiss = (color === 'red' || color === 'orange');
+  if (isMiss && tracker.attempts < DD_RETRY_CAP) {
+    // Didn't know it (or only got reminded) — bring it back later at a random point
+    // in what's left of this round, rather than moving on for good.
+    const insertAt = Math.floor(Math.random() * (sess.queue.length + 1));
+    sess.queue.splice(insertAt, 0, card);
+  } else {
+    // Either got it right, or missed it enough times in a row that we let it go for this round.
+    sess.doneCount++;
+  }
+
+  showNextDDCard();
 }
 
 /* =====================================================================
@@ -2762,7 +2808,7 @@ function rateDDCard(color) {
 ===================================================================== */
 function renderDailyDoseResults() {
   const sess = state.ddSession;
-  const total = sess.cards.length;
+  const total = sess.totalWords;
   const bar = document.getElementById('dd-progress-bar');
   if (bar) bar.style.width = '100%';
   document.getElementById('dd-results-total').textContent = total;
